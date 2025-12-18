@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% block title %}Créer un Administrateur - Admin{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="mb-3">
+        <h3>👥 Ajouter un Administrateur</h3>
+        <p class="text-muted">Remplissez le formulaire ci-dessous pour ajouter un nouvel administrateur.</p>
+    </div>
+
+   
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body">
+            <form method="post" novalidate>
+                {% csrf_token %}
+                
+                <h5 class="mb-3">📝 Informations de connexion</h5>
+                {% for field in user_form %}
+                <div class="mb-3">
+                    <label class="form-label">{{ field.label }}{% if field.field.required %} *{% endif %}</label>
+                    {{ field }}
+                    {% if field.help_text %}
+                        <small class="form-text text-muted">{{ field.help_text }}</small>
+                    {% endif %}
+                    {% if field.errors %}
+                        <div class="text-danger mt-1">
+                            {% for error in field.errors %}
+                                {{ error }}<br>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+
+                <div class="d-flex justify-content-between mt-4">
+                    <a href="{% url 'accounts:dashboard' %}" class="btn btn-outline-secondary">
+                        ← Retour au dashboard
+                    </a>
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-check-circle"></i> Créer l'administrateur
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

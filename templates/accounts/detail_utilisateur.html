@@ -1,0 +1,214 @@
+<!-- accounts/templates/accounts/detail_utilisateur.html -->
+{% extends 'base.html' %}
+{% block title %}Détail Utilisateur - {{ utilisateur.username }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Navigation -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <a href="{% url 'accounts:gestion_utilisateurs' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Retour
+            </a>
+        </div>
+        <h3 class="mb-0">
+            <i class="bi bi-person-badge"></i> {{ utilisateur.get_full_name|default:utilisateur.username }}
+        </h3>
+    </div>
+
+    <div class="row">
+        <!-- Informations principales -->
+        <div class="col-md-8">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <strong>Informations du compte</strong>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Nom d'utilisateur :</strong><br>
+                                {{ utilisateur.username }}
+                            </p>
+                            <p><strong>Nom complet :</strong><br>
+                                {{ utilisateur.get_full_name|default:"—" }}
+                            </p>
+                            <p><strong>Email :</strong><br>
+                                {{ utilisateur.email|default:"—" }}
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Rôle :</strong><br>
+                                <span class="badge 
+                                    {% if utilisateur.role == 'admin' %}bg-dark
+                                    {% elif utilisateur.role == 'prof' %}bg-info
+                                    {% else %}bg-secondary{% endif %}">
+                                    {{ utilisateur.get_role_display }}
+                                </span>
+                            </p>
+                            <p><strong>Statut :</strong><br>
+                                {% if utilisateur.is_active %}
+                                <span class="badge bg-success">
+                                    <i class="bi bi-check-circle"></i> Compte actif
+                                </span>
+                                {% else %}
+                                <span class="badge bg-danger">
+                                    <i class="bi bi-x-circle"></i> Compte désactivé
+                                </span>
+                                {% endif %}
+                            </p>
+                            <p><strong>Inscrit depuis :</strong><br>
+                                {{ utilisateur.date_joined|date:"d F Y" }}
+                            </p>
+                            <p><strong>Dernière connexion :</strong><br>
+                                {% if utilisateur.last_login %}
+                                    {{ utilisateur.last_login|date:"d/m/Y H:i" }}
+                                {% else %}
+                                    <span class="text-muted">Jamais</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-warning">
+                    <strong><i class="bi bi-gear"></i> Actions administratives</strong>
+                </div>
+                <div class="card-body">
+                    <!-- Activation/Désactivation -->
+                    <div class="mb-3">
+                        <form method="post" action="{% url 'accounts:toggle_activation' utilisateur.id %}">
+                            {% csrf_token %}
+                            {% if utilisateur.is_active %}
+                            <button type="submit" 
+                                    class="btn btn-danger w-100"
+                                    onclick="return confirm('Désactiver le compte de {{ utilisateur.username }} ?')">
+                                <i class="bi bi-person-x"></i> Désactiver ce compte
+                            </button>
+                            <small class="text-muted d-block mt-1">
+                                L'utilisateur ne pourra plus se connecter
+                            </small>
+                            {% else %}
+                            <button type="submit" 
+                                    class="btn btn-success w-100"
+                                    onclick="return confirm('Réactiver le compte de {{ utilisateur.username }} ?')">
+                                <i class="bi bi-person-check"></i> Réactiver ce compte
+                            </button>
+                            <small class="text-muted d-block mt-1">
+                                L'utilisateur pourra à nouveau se connecter
+                            </small>
+                            {% endif %}
+                        </form>
+                    </div>
+
+                    <!-- Changer rôle -->
+                    {% if utilisateur != user %}  <!-- Ne pas modifier son propre rôle -->
+                    <form method="post" action="{% url 'accounts:changer_role' utilisateur.id %}">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label"><strong>Changer le rôle :</strong></label>
+                            <div class="input-group">
+                                <select name="role" class="form-select" required>
+                                    {% for role_value, role_label in utilisateur.Role.choices %}
+                                    <option value="{{ role_value }}" 
+                                            {% if utilisateur.role == role_value %}selected{% endif %}>
+                                        {{ role_label }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <button type="submit" 
+                                        class="btn btn-warning"
+                                        onclick="return confirm('Changer le rôle de cet utilisateur ?')">
+                                    <i class="bi bi-arrow-repeat"></i> Appliquer
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Informations supplémentaires -->
+        <div class="col-md-4">
+            <!-- Profil étudiant -->
+            {% if utilisateur.role == 'etud' and utilisateur.etudiant %}
+            <div class="card shadow-sm mb-3">
+                <div class="card-header bg-info text-white">
+                    <strong><i class="bi bi-mortarboard"></i> Profil Étudiant</strong>
+                </div>
+                <div class="card-body">
+                    <p><strong>Matricule :</strong><br>
+                        {{ utilisateur.etudiant.matricule }}
+                    </p>
+                    <p><strong>Faculté :</strong><br>
+                        {{ utilisateur.etudiant.faculte.nom }}
+                    </p>
+                    <p><strong>Niveau :</strong><br>
+                        {{ utilisateur.etudiant.get_niveau_display }}
+                    </p>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Profil professeur -->
+            {% if utilisateur.role == 'prof' and utilisateur.professeur %}
+            <div class="card shadow-sm mb-3">
+                <div class="card-header bg-success text-white">
+                    <strong><i class="bi bi-person-badge"></i> Profil Professeur</strong>
+                </div>
+                <div class="card-body">
+                    <p><strong>Spécialité :</strong><br>
+                        {{ utilisateur.professeur.specialite|default:"—" }}
+                    </p>
+                    <p><strong>Grade :</strong><br>
+                        {{ utilisateur.professeur.get_grade_display|default:"—" }}
+                    </p>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Avertissements -->
+            <div class="alert alert-warning small">
+                <i class="bi bi-exclamation-triangle"></i>
+                <strong>Important :</strong>
+                <ul class="mb-0 mt-1">
+                    <li>Ne désactivez pas votre propre compte</li>
+                    <li>Les changements sont immédiats</li>
+                    <li>Un compte inactif ne peut pas se connecter</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Confirmation améliorée
+document.addEventListener('DOMContentLoaded', function() {
+    // Désactivation
+    document.querySelector('form[action*="toggle_activation"] button').addEventListener('click', function(e) {
+        const action = this.textContent.includes('Désactiver') ? 'désactiver' : 'réactiver';
+        const nom = '{{ utilisateur.get_full_name|default:utilisateur.username }}';
+        
+        if (!confirm(`Êtes-vous sûr de vouloir ${action} le compte de "${nom}" ?`)) {
+            e.preventDefault();
+        }
+    });
+
+    // Changement de rôle
+    const formRole = document.querySelector('form[action*="changer_role"]');
+    if (formRole) {
+        formRole.addEventListener('submit', function(e) {
+            const nouveauRole = this.querySelector('select[name="role"]').selectedOptions[0].text;
+            const nom = '{{ utilisateur.get_full_name|default:utilisateur.username }}';
+            
+            if (!confirm(`Changer le rôle de "${nom}" en "${nouveauRole}" ?`)) {
+                e.preventDefault();
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

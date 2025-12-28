@@ -42,6 +42,7 @@
                             <th>Nom Complet</th>
                             <th>Faculté</th>
                             <th>Niveau</th>
+                            <th>Semestre</th>
                             <th>Téléphone</th>
                             <th>Date d'Inscription</th>
                             <th>Actions</th>
@@ -54,6 +55,7 @@
                             <td>{{ e.user.get_full_name }}</td>
                             <td>{{ e.faculte.nom }}</td>
                             <td>{{ e.get_niveau_display }}</td>
+                            <td>{{ e.semestre_courant }}</td>
                             <td>{{ e.user.telephone|default:"—" }}</td>
                             <td>{{ e.date_inscription|date:"d/m/Y" }}</td>
                             <td>
@@ -65,10 +67,14 @@
                                         <i class="bi bi-pencil-square"></i>
                                     </a>
                                     <a href="{% url 'accounts:supprimer_etudiant' e.id %}"
-                                       class="btn btn-outline-danger" title="Supprimer"
+                                       class="btn btn-outline-danger me-1" title="Supprimer"
                                        onclick="return confirm('Êtes-vous sûr de vouloir supprimer cet étudiant ?');">
                                         <i class="bi bi-trash"></i>
                                     </a> 
+                                    <a href="{% url 'accounts:voir_profil_utilisateur' e.user.id %}"
+                                    class="btn btn-outline-info btn-sm">
+                                        <i class="bi bi-person-lines-fill"></i> Voir le profil
+                                    </a>
                                 </div>
                                 {% else %}
                                 <span class="text-muted">ID manquant</span>

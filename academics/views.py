@@ -4,7 +4,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.urls import reverse
 
-from accounts.views import can_manage_cours, can_manage_facultes, can_manage_users, is_admin
+from accounts.views import can_manage_academique, can_manage_cours, can_manage_facultes, can_manage_users, is_admin
 from .models import Cours, Faculte  # ✅ SUPPRIMER Inscription
 from accounts.models import Admin, User
 from .forms import CoursForm, FaculteForm 
@@ -20,18 +20,30 @@ from django.http import HttpResponse
 import csv
 import io 
 
+ 
+from django.template.loader import render_to_string  
 
+ 
+# AJOUTEZ CET IMPORT EN HAUT DU FICHIER
+from accounts.audit_utils import (
+    audit_creer_cours, audit_modifier_cours, audit_supprimer_cours,
+    audit_creer_faculte, audit_supprimer_faculte,
+    audit_creer_annonce, audit_supprimer_annonce,
+    audit_action_generique
+)
 
  
  
 
 @login_required
-@user_passes_test(can_manage_cours)
+@user_passes_test(can_manage_academique)
 def creer_cours(request):
     if request.method == 'POST':
         form = CoursForm(request.POST)
         if form.is_valid():
-            form.save()
+            cours=form.save()
+            # ✅ AUDIT SIMPLE MAIS COMPLET
+            audit_creer_cours(request, cours)
             messages.success(request, "✅ Cours créé avec succès.")
             return redirect('academics:liste_cours')
         else:
@@ -171,9 +183,6 @@ def liste_cours(request):
 
 
 
-from django.http import JsonResponse
-from django.template.loader import render_to_string
-from .models import Cours, Faculte
 
 def cours_par_faculte_modal(request):
     """Retourne les cours HTML d'une faculté pour le modal"""
@@ -277,11 +286,26 @@ def rechercher_cours_ajax(request):
 def modifier_cours(request, cours_id):
     """Modifier un cours existant"""
     cours = get_object_or_404(Cours, id=cours_id)
+    # Capturer l'ancien état si nécessaire
+    ancien_professeur = cours.professeur
+    ancien_intitule = cours.intitule
     
     if request.method == 'POST':
         form = CoursForm(request.POST, instance=cours)
         if form.is_valid():
             form.save()
+            cours = form.save()
+            
+            # ✅ AUDIT avec détails des changements
+            changements = []
+            if ancien_professeur != cours.professeur:
+                changements.append(f"Professeur: {ancien_professeur} → {cours.professeur}")
+            if ancien_intitule != cours.intitule:
+                changements.append(f"Intitulé modifié")
+            
+            details_changements = ", ".join(changements) if changements else "Informations générales modifiées"
+            audit_modifier_cours(request, cours, details_changements)
+
             messages.success(request, "Cours modifié avec succès")
             return redirect('academics:liste_cours')
     else:
@@ -299,6 +323,9 @@ def supprimer_cours(request, cours_id):
     cours = get_object_or_404(Cours, id=cours_id)
     
     if request.method == 'POST':
+        # ✅ AUDIT AVANT la suppression (pour garder les infos)
+        audit_supprimer_cours(request, cours)
+
         cours.delete()
         messages.success(request, "Cours supprimé avec succès")
         return redirect('academics:liste_cours')
@@ -307,9 +334,6 @@ def supprimer_cours(request, cours_id):
         'cours': cours
     })
 
-# Dans academics/views.py - AJOUTER en haut
-from django.shortcuts import get_object_or_404
-from .forms import CoursForm, FaculteForm  # ✅ AJOUTER FaculteForm
 
 # ... vos vues existantes ...
 
@@ -319,7 +343,12 @@ def creer_faculte(request):
     if request.method == 'POST':
         form = FaculteForm(request.POST)
         if form.is_valid():
-            form.save()
+            #form.save()
+            faculte = form.save()
+            
+            # ✅ AUDIT
+            audit_creer_faculte(request, faculte)
+
             messages.success(request, "Faculté créée avec succès")
             return redirect('academics:liste_facultes')
     else:
@@ -355,6 +384,8 @@ def supprimer_faculte(request, faculte_id):
     faculte = get_object_or_404(Faculte, id=faculte_id)
 
     if request.method == 'POST':
+        # ✅ AUDIT AVANT suppression
+        audit_supprimer_faculte(request, faculte)
         faculte.delete()
         messages.success(request, "Faculté supprimée avec succès")
         return redirect('academics:liste_facultes')
@@ -376,10 +407,14 @@ def liste_facultes(request):
 
  
 @login_required
-@user_passes_test(can_manage_users)
+#@user_passes_test(can_manage_users)
 def export_cours_csv(request):
     # Récupérer le filtre de recherche si présent
     q = request.GET.get('q', '').strip()
+     # ✅ AUDIT: Export
+    audit_action_generique(request, 'EXPORT_DATA', 
+                          'Export cours CSV', 
+                          f"Export des cours. Filtre: '{q}'")
 
     # Sélection de base
     qs = Cours.objects.select_related('faculte', 'professeur').all()
@@ -698,7 +733,10 @@ def creer_annonce(request):
                 annonce.destinataire_tous = True
             
             annonce.save()
-            
+            # ✅ AUDIT seulement si publiée (optionnel)
+            if annonce.est_publie:
+                audit_creer_annonce(request, annonce)
+
             messages.success(
                 request, 
                 f"✅ Annonce « {annonce.titre} » {message_type} avec succès !"
@@ -781,6 +819,9 @@ def supprimer_annonce(request, pk):
     annonce = get_object_or_404(Annonce, pk=pk)
     
     if request.method == 'POST':
+        # ✅ AUDIT: Suppression (AVANT)
+        audit_supprimer_annonce(request, annonce)
+        
         titre = annonce.titre
         annonce.delete()
         messages.success(request, f"🗑️ Annonce « {titre} » supprimée avec succès !")

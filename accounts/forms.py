@@ -50,14 +50,29 @@ class EtudiantForm(forms.ModelForm):
 
     class Meta:
         model = Etudiant
-        exclude = ['user', 'date_inscription', 'matricule']  # Exclure matricule
+        exclude = ['user', 'date_inscription', 'matricule', 'annee_academique_courante', 'statut_academique']  # Exclure matricule
         widgets = {
             'niveau': forms.Select(attrs={'class': 'form-select'}),
+            'semestre_courant': forms.Select(attrs={'class': 'form-select'}),
             'adresse': forms.TextInput(attrs={'class': 'form-control'}),
             'date_naissance': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
             'sexe': forms.Select(attrs={'class': 'form-select'}),
             'telephone_parent': forms.TextInput(attrs={'class': 'form-control'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        from django.utils import timezone
+        
+        # Déterminer le semestre par défaut basé sur le mois
+        mois = timezone.now().month
+        semestre_default = 'S1' if (9 <= mois <= 12 or mois == 1) else 'S2'
+        
+        # Définir la valeur initiale
+        self.fields['semestre_courant'].initial = semestre_default
+        
+        # Aide à la décision
+        self.fields['semestre_courant'].help_text = f"Semestre suggéré: {semestre_default} (mois actuel: {mois})"
 
         
 class ProfesseurForm(forms.ModelForm):
@@ -180,3 +195,34 @@ class UserProfileForm(UserChangeForm):
             pass
         
         return user
+    
+
+# forms.py - AJOUTE cette classe
+class AdminCreationForm(forms.ModelForm):  # Hérite de UserForm
+    niveau_acces = forms.ChoiceField(
+        choices=[
+            ('super', 'Super Administrateur (toutes permissions)'),
+            ('academique', 'Administrateur Académique (pas de gestion utilisateurs)'),
+            ('utilisateurs', 'Gestionnaire Utilisateurs (utilisateurs seulement)')
+        ],
+        initial='academique',
+        widget=forms.Select(attrs={'class': 'form-select'}),
+        label="Niveau d'accès"
+    )
+    
+    class Meta(UserForm.Meta):
+        # Hérite tous les champs de UserForm
+        pass
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Rendre tous les champs requis
+        for field_name, field in self.fields.items():
+            if field_name != 'telephone':  # téléphone peut être optionnel
+                field.required = True
+    # def __init__(self, *args, **kwargs):
+    #     super().__init__(*args, **kwargs)
+        # Rendre le mot de passe optionnel et caché
+        # self.fields['password'].widget.attrs.update({'class': 'form-control'})
+        # self.fields['password'].required = False
+        # self.fields['password'].help_text = "Laissez vide pour '1234' par défaut"
+

@@ -208,7 +208,7 @@
                     
                     <div class="row g-3">
                         <!-- Faculté -->
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <label class="form-label fw-semibold">Faculté *</label>
                             {{ etu_form.faculte }}
                             {% if etu_form.faculte.errors %}
@@ -221,12 +221,27 @@
                         </div>
                         
                         <!-- Niveau -->
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <label class="form-label fw-semibold">Niveau *</label>
                             {{ etu_form.niveau }}
                             {% if etu_form.niveau.errors %}
                                 <div class="text-danger small mt-1">
                                     {% for error in etu_form.niveau.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">Semestre *</label>
+                            {{ etu_form.semestre_courant }}
+                            <div class="form-text">
+                                <i class="bi bi-info-circle"></i>
+                                {{ etu_form.semestre_courant.help_text }}
+                            </div>
+                            {% if etu_form.semestre_courant.errors %}
+                                <div class="text-danger small mt-1">
+                                    {% for error in etu_form.semestre_courant.errors %}
                                         {{ error }}
                                     {% endfor %}
                                 </div>

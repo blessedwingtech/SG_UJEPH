@@ -2,12 +2,15 @@
 {% block title %}Validation des Notes - Admin{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
+<div class="container mt-4"> 
     <div class="mb-4">
         <h3>📋 Validation des Notes</h3>
         <p class="text-muted">
             Cours ayant des notes soumises par les professeurs
         </p>
+        <a href="{% url 'grades:gestion_notes_publiees' %}" class="btn btn-primary">
+            <i class="bi bi-pencil-square me-1"></i> Modifier les notes publiées
+        </a>
     </div>
 
     {% if cours_soumis %}
@@ -75,4 +78,5 @@
     </div>
     {% endif %}
 </div>
+
 {% endblock %}

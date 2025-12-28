@@ -66,9 +66,13 @@
                                    <i class="bi bi-pencil-square"></i>
                                 </a>
                                 <a href="{% url 'accounts:supprimer_professeur' prof.id %}" 
-                                   class="btn btn-sm btn-outline-danger"
+                                   class="btn btn-sm btn-outline-danger me-1"
                                    onclick="return confirm('Supprimer ce professeur ?');">
                                    <i class="bi bi-trash"></i>
+                                </a>
+                                <a href="{% url 'accounts:voir_profil_utilisateur' prof.user.id %}"
+                                class="btn btn-outline-info btn-sm1">
+                                    <i class="bi bi-person-lines-fill"></i> Voir le profil
                                 </a>
                             </td>
                         </tr>

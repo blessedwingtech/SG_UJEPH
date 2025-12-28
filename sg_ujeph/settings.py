@@ -26,7 +26,8 @@ SECRET_KEY = 'django-insecure--tvx4&f+v6$$aa)+v6!ynyts4@$16mmk&#+qu=h-jev#!)qh)$
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['localhost', '192.168.241.229', '127.0.0.1', '192.168.1.27']
+ALLOWED_HOSTS = ['localhost', '192.168.241.229', '127.0.0.1', '192.168.1.27', '10.219.252.229', '10.233.2.229']
+SITE_URL = 'http://127.0.0.1:8000'
 
 AUTH_USER_MODEL = 'accounts.User'
 
@@ -53,6 +54,20 @@ INSTALLED_APPS = [
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 CRISPY_TEMPLATE_PACK = "bootstrap5"
 
+
+# Configuration sécurité
+MAX_LOGIN_ATTEMPTS = 5
+LOCKOUT_DURATION = 900  # 15 minutes en secondes
+AUTO_LOGOUT_TIMEOUT = 300  # 5 minutes en secondes
+
+# Cache pour les tentatives de connexion
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'unique-snowflake',
+    }
+}
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -61,6 +76,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'accounts.middleware.AutoLogoutMiddleware',
 ]
 
 ROOT_URLCONF = 'sg_ujeph.urls'
@@ -115,6 +131,17 @@ DATABASES = {
 }
 
 
+# settings.py
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+#EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'  # Ou votre serveur SMTP
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'blessedwingtech@gmail.com'
+EMAIL_HOST_PASSWORD = 'xxwp dook dxjk senm'
+DEFAULT_FROM_EMAIL = 'Système UJEPH <blessedwingtech@gmail.com>'
+
+
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
 
@@ -137,9 +164,11 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+#LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'fr-FR'
 
-TIME_ZONE = 'UTC'
+#TIME_ZONE = 'UTC'
+TIME_ZONE = 'America/Port-au-Prince'
 
 USE_I18N = True
 

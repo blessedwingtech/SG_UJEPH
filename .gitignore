@@ -19,6 +19,7 @@ ENV/
 .vscode/
 *.swp
 *.swo
+*.sublime-*
 
 # OS
 .DS_Store
@@ -33,11 +34,6 @@ Thumbs.db
 *.dump
 *.sql
 *.backup
-
-# Django migrations (controversé - voir note ci-dessous)
-#!**/migrations/
-#!**/migrations/*.py
-#!**/migrations/__init__.py
 
 # Environment variables
 .env
@@ -67,5 +63,20 @@ static/
 *.MYI
 *.ib_logfile*
 
-# Docker
-docker-compose.override.yml
+# Uploads utilisateurs (CRITIQUE !)
+annonces/fichiers/
+media/
+
+# Fichiers temporaires
+*.tmp
+*.temp
+
+# Fichier ls accidentel
+/ls
+
+# Backup files
+*.bak
+*~
+
+# Windows
+desktop.ini

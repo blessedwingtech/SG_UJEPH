@@ -20,8 +20,14 @@
         <!-- Informations principales -->
         <div class="col-md-8">
             <div class="card shadow-sm mb-4">
-                <div class="card-header bg-primary text-white">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                     <strong>Informations du compte</strong>
+                    {% if user.role == 'admin' %}
+                    <a href="{% url 'accounts:voir_profil_utilisateur' utilisateur.id %}"
+                    class="btn btn-outline-light btn-sm">
+                        <i class="bi bi-person-lines-fill"></i> Voir le profil
+                    </a>
+                    {% endif %}
                 </div>
                 <div class="card-body">
                     <div class="row">
@@ -79,38 +85,49 @@
                 <div class="card-body">
                     <!-- Activation/Désactivation -->
                     <div class="mb-3">
-                        <form method="post" action="{% url 'accounts:toggle_activation' utilisateur.id %}">
-                            {% csrf_token %}
-                            {% if utilisateur.is_active %}
-                            <button type="submit" 
-                                    class="btn btn-danger w-100"
-                                    onclick="return confirm('Désactiver le compte de {{ utilisateur.username }} ?')">
-                                <i class="bi bi-person-x"></i> Désactiver ce compte
-                            </button>
-                            <small class="text-muted d-block mt-1">
-                                L'utilisateur ne pourra plus se connecter
-                            </small>
-                            {% else %}
-                            <button type="submit" 
-                                    class="btn btn-success w-100"
-                                    onclick="return confirm('Réactiver le compte de {{ utilisateur.username }} ?')">
-                                <i class="bi bi-person-check"></i> Réactiver ce compte
-                            </button>
-                            <small class="text-muted d-block mt-1">
-                                L'utilisateur pourra à nouveau se connecter
-                            </small>
-                            {% endif %}
-                        </form>
+                        <form method="post" action="{% url 'accounts:toggle_activation' utilisateur.id %}" 
+                        id="toggleForm-{{ utilisateur.id }}" 
+                        class="toggle-activation-form">
+                        {% csrf_token %}
+                        
+                        {% if utilisateur.is_active %}
+                        <button type="submit" 
+                                class="btn btn-danger w-100 toggle-btn"
+                                data-user-id="{{ utilisateur.id }}"
+                                data-action="desactiver"
+                                data-username="{{ utilisateur.username }}"
+                                data-fullname="{{ utilisateur.get_full_name }}"
+                                onclick="return confirmToggle(event, this)">
+                            <i class="bi bi-person-x"></i> Désactiver ce compte
+                        </button>
+                        <small class="text-muted d-block mt-1">
+                            L'utilisateur ne pourra plus se connecter
+                        </small>
+                        {% else %}
+                        <button type="submit" 
+                                class="btn btn-success w-100 toggle-btn"
+                                data-user-id="{{ utilisateur.id }}"
+                                data-action="reactiver"
+                                data-username="{{ utilisateur.username }}"
+                                data-fullname="{{ utilisateur.get_full_name }}"
+                                onclick="return confirmToggle(event, this)">
+                            <i class="bi bi-person-check"></i> Réactiver ce compte
+                        </button>
+                        <small class="text-muted d-block mt-1">
+                            L'utilisateur pourra à nouveau se connecter
+                        </small>
+                        {% endif %}
+                    </form>
                     </div>
 
                     <!-- Changer rôle -->
                     {% if utilisateur != user %}  <!-- Ne pas modifier son propre rôle -->
-                    <form method="post" action="{% url 'accounts:changer_role' utilisateur.id %}">
+                    <form method="post" action="{% url 'accounts:changer_role' utilisateur.id %}" id="roleForm">
                         {% csrf_token %}
                         <div class="mb-3">
                             <label class="form-label"><strong>Changer le rôle :</strong></label>
                             <div class="input-group">
-                                <select name="role" class="form-select" required>
+                                <select name="role" class="form-select" required id="roleSelect">
                                     {% for role_value, role_label in utilisateur.Role.choices %}
                                     <option value="{{ role_value }}" 
                                             {% if utilisateur.role == role_value %}selected{% endif %}>
@@ -120,7 +137,7 @@
                                 </select>
                                 <button type="submit" 
                                         class="btn btn-warning"
-                                        onclick="return confirm('Changer le rôle de cet utilisateur ?')">
+                                        onclick="return confirmRoleChange(event)">
                                     <i class="bi bi-arrow-repeat"></i> Appliquer
                                 </button>
                             </div>
@@ -184,31 +201,183 @@
     </div>
 </div>
 
+<!-- SweetAlert CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+
 <script>
-// Confirmation améliorée
-document.addEventListener('DOMContentLoaded', function() {
-    // Désactivation
-    document.querySelector('form[action*="toggle_activation"] button').addEventListener('click', function(e) {
-        const action = this.textContent.includes('Désactiver') ? 'désactiver' : 'réactiver';
-        const nom = '{{ utilisateur.get_full_name|default:utilisateur.username }}';
-        
-        if (!confirm(`Êtes-vous sûr de vouloir ${action} le compte de "${nom}" ?`)) {
-            e.preventDefault();
+// Fonction pour l'activation/désactivation
+function confirmToggle(event, button) {
+    event.preventDefault();
+    
+    const action = button.getAttribute('data-action');
+    const username = button.getAttribute('data-username');
+    const fullname = button.getAttribute('data-fullname');
+    const form = button.closest('form');
+    
+    const config = {
+        desactiver: {
+            title: 'Désactiver le compte',
+            html: `
+                <div class="text-start">
+                    <p>Êtes-vous sûr de vouloir <strong class="text-danger">désactiver</strong> le compte de :</p>
+                    <div class="alert alert-light border">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-person-circle fs-4 text-muted me-3"></i>
+                            <div>
+                                <h6 class="mb-1">${fullname}</h6>
+                                <small class="text-muted">@${username}</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="alert alert-warning small">
+                        <i class="bi bi-exclamation-triangle me-1"></i>
+                        <strong>Conséquences :</strong>
+                        <ul class="mb-0 mt-1">
+                            <li>L'utilisateur ne pourra plus se connecter</li>
+                            <li>Son accès sera immédiatement coupé</li>
+                            <li>Les données seront conservées</li>
+                        </ul>
+                    </div>
+                </div>
+            `,
+            icon: 'warning',
+            confirmButtonText: '<i class="bi bi-person-x me-1"></i> Désactiver',
+            confirmButtonColor: '#dc3545',
+            cancelButtonText: '<i class="bi bi-x me-1"></i> Annuler',
+            showCancelButton: true,
+            showCloseButton: true,
+            customClass: {
+                confirmButton: 'btn btn-danger',
+                cancelButton: 'btn btn-secondary'
+            }
+        },
+        reactiver: {
+            title: 'Réactiver le compte',
+            html: `
+                <div class="text-start">
+                    <p>Êtes-vous sûr de vouloir <strong class="text-success">réactiver</strong> le compte de :</p>
+                    <div class="alert alert-light border">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-person-circle fs-4 text-success me-3"></i>
+                            <div>
+                                <h6 class="mb-1">${fullname}</h6>
+                                <small class="text-muted">@${username}</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="alert alert-success small">
+                        <i class="bi bi-info-circle me-1"></i>
+                        <strong>Conséquences :</strong>
+                        <ul class="mb-0 mt-1">
+                            <li>L'utilisateur pourra à nouveau se connecter</li>
+                            <li>Ses permissions seront restaurées</li>
+                        </ul>
+                    </div>
+                </div>
+            `,
+            icon: 'success',
+            confirmButtonText: '<i class="bi bi-person-check me-1"></i> Réactiver',
+            confirmButtonColor: '#198754',
+            cancelButtonText: '<i class="bi bi-x me-1"></i> Annuler',
+            showCancelButton: true,
+            showCloseButton: true,
+            customClass: {
+                confirmButton: 'btn btn-success',
+                cancelButton: 'btn btn-secondary'
+            }
+        }
+    };
+    
+    Swal.fire(config[action]).then((result) => {
+        if (result.isConfirmed) {
+            // Soumettre le formulaire
+            form.submit();
+            
+            // Afficher message de chargement
+            Swal.fire({
+                title: 'Traitement en cours...',
+                text: 'Veuillez patienter',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
         }
     });
+    
+    return false; // Empêcher la soumission normale
+}
 
-    // Changement de rôle
-    const formRole = document.querySelector('form[action*="changer_role"]');
-    if (formRole) {
-        formRole.addEventListener('submit', function(e) {
-            const nouveauRole = this.querySelector('select[name="role"]').selectedOptions[0].text;
-            const nom = '{{ utilisateur.get_full_name|default:utilisateur.username }}';
+// Fonction pour le changement de rôle
+function confirmRoleChange(event) {
+    event.preventDefault();
+    
+    const form = document.getElementById('roleForm');
+    const roleSelect = document.getElementById('roleSelect');
+    const nouveauRole = roleSelect.options[roleSelect.selectedIndex].text;
+    const username = '{{ utilisateur.username }}';
+    const fullname = '{{ utilisateur.get_full_name|default:utilisateur.username }}';
+    const ancienRole = '{{ utilisateur.get_role_display }}';
+    
+    Swal.fire({
+        title: 'Changer le rôle',
+        html: `
+            <div class="text-start">
+                <p>Vous êtes sur le point de modifier le rôle de :</p>
+                <div class="alert alert-light border">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-person-circle fs-4 text-primary me-3"></i>
+                        <div>
+                            <h6 class="mb-1">${fullname}</h6>
+                            <small class="text-muted">@${username}</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="alert alert-info">
+                    <p class="mb-1"><strong>Changement :</strong></p>
+                    <div class="d-flex align-items-center justify-content-between">
+                        <span class="badge bg-secondary">${ancienRole}</span>
+                        <i class="bi bi-arrow-right text-primary mx-2"></i>
+                        <span class="badge bg-primary">${nouveauRole}</span>
+                    </div>
+                </div>
+                <div class="alert alert-warning small">
+                    <i class="bi bi-exclamation-triangle me-1"></i>
+                    <strong>Note :</strong> Cette action peut affecter les permissions de l'utilisateur.
+                </div>
+                <p><strong>Confirmez-vous ce changement ?</strong></p>
+            </div>
+        `,
+        icon: 'question',
+        confirmButtonText: '<i class="bi bi-check-circle me-1"></i> Confirmer',
+        confirmButtonColor: '#0d6efd',
+        cancelButtonText: '<i class="bi bi-x me-1"></i> Annuler',
+        showCancelButton: true,
+        showCloseButton: true,
+        customClass: {
+            confirmButton: 'btn btn-primary',
+            cancelButton: 'btn btn-secondary'
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Soumettre le formulaire
+            form.submit();
             
-            if (!confirm(`Changer le rôle de "${nom}" en "${nouveauRole}" ?`)) {
-                e.preventDefault();
-            }
-        });
-    }
-});
+            // Afficher message de chargement
+            Swal.fire({
+                title: 'Changement en cours...',
+                text: 'Mise à jour du rôle',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+        }
+    });
+    
+    return false; // Empêcher la soumission normale
+}
+
+ 
 </script>
 {% endblock %}

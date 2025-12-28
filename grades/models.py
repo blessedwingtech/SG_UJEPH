@@ -41,6 +41,13 @@ class Note(models.Model):
         blank=True,
         verbose_name="Professeur"
     )
+    annee_academique = models.CharField(
+        max_length=9,
+        blank=True,
+        null=True,
+        verbose_name="Année académique",
+        help_text="Format: 2023-2024"
+    )
     
     class Meta:
         verbose_name_plural = "Notes"
@@ -63,6 +70,16 @@ class Note(models.Model):
             'rejetée': 'danger'
         }
         return colors.get(self.statut, 'secondary')
+    # models.py - Ajoutez cette méthode dans la classe Note
+    def remettre_en_brouillon(self):
+        """Remet une note publiée en brouillon (action admin)"""
+        if self.statut == 'publiée':
+            self.statut = 'brouillon'
+            self.date_validation = None  # Réinitialiser la date de validation
+            self.save()
+            return True
+        return False
+    
     
     # ✅ NOUVEAU : Méthodes de workflow
     def peut_modifier_par(self, user):
@@ -136,4 +153,36 @@ class InscriptionCours(models.Model):
     def __str__(self):
         return f"{self.etudiant} → {self.cours}"
 
+
+# Dans grades/models.py - AJOUTER à la fin du fichier
+
+class HistoriquePromotion(models.Model):
+    """Trace les changements de niveau/semestre"""
+    
+    DECISION_CHOICES = [
+        ('admis', 'Admis'),
+        ('redouble', 'Redouble'),
+        ('passage_conditionnel', 'Passage conditionnel'),
+        ('changement_semestre', 'Changement de semestre'),
+    ]
+    
+    etudiant = models.ForeignKey(Etudiant, on_delete=models.CASCADE, related_name='promotions')
+    ancien_niveau = models.CharField(max_length=50)
+    ancien_semestre = models.CharField(max_length=10)
+    nouveau_niveau = models.CharField(max_length=50)
+    nouveau_semestre = models.CharField(max_length=10)
+    annee_academique = models.CharField(max_length=9)
+    decision = models.CharField(max_length=50, choices=DECISION_CHOICES)
+    moyenne_generale = models.DecimalField(max_digits=5, decimal_places=2, null=True)
+    date_promotion = models.DateTimeField(auto_now_add=True)
+    effectue_par = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    notes = models.TextField(blank=True)
+    
+    class Meta:
+        ordering = ['-date_promotion']
+        verbose_name = "Historique de promotion"
+        verbose_name_plural = "Historiques de promotions"
+    
+    def __str__(self):
+        return f"{self.etudiant.matricule} - {self.ancien_niveau}{self.ancien_semestre} → {self.nouveau_niveau}{self.nouveau_semestre}"
     

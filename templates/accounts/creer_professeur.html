@@ -262,14 +262,17 @@ function checkUsernameAvailability(username) {
     const message = document.getElementById('usernameMessage');
     const usernameInput = document.querySelector('#id_username');
     
-    if (!usernameInput) return;
+    if (!usernameInput || !icon || !message) return;
     
     // Afficher état de chargement
     icon.textContent = '⏳';
     message.textContent = 'Vérification...';
     icon.className = 'text-info';
     
-    fetch('/accounts/check-username/', {
+    // Enlever les classes de validation précédentes
+    usernameInput.classList.remove('is-invalid', 'is-valid');
+    
+    fetch('{% url "accounts:check_username" %}', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -277,29 +280,41 @@ function checkUsernameAvailability(username) {
         },
         body: JSON.stringify({username: username})
     })
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`Erreur HTTP: ${response.status}`);
+        }
+        return response.json();
+    })
     .then(data => {
         if (data.exists) {
+            // Nom d'utilisateur déjà pris
             icon.textContent = '✗';
             message.textContent = 'Ce nom d\'utilisateur est déjà pris';
             icon.className = 'text-danger';
             usernameInput.classList.add('is-invalid');
-            usernameInput.classList.remove('is-valid');
+        } else if (data.valid === false) {
+            // Nom d'utilisateur invalide (caractères spéciaux, etc.)
+            icon.textContent = '✗';
+            message.textContent = data.message || 'Nom d\'utilisateur invalide';
+            icon.className = 'text-danger';
+            usernameInput.classList.add('is-invalid');
         } else {
+            // Nom d'utilisateur disponible et valide
             icon.textContent = '✓';
             message.textContent = 'Nom d\'utilisateur disponible';
             icon.className = 'text-success';
             usernameInput.classList.add('is-valid');
-            usernameInput.classList.remove('is-invalid');
         }
     })
     .catch(error => {
+        console.error('Erreur vérification username:', error);
         icon.textContent = '⚠';
-        message.textContent = 'Erreur de vérification';
+        message.textContent = 'Impossible de vérifier (erreur réseau)';
         icon.className = 'text-warning';
+        // Ne pas changer les classes de validation en cas d'erreur
     });
 }
-
 // Validation de l'email
 function validateEmail(email) {
     const icon = document.getElementById('emailIcon');
@@ -402,7 +417,7 @@ function validatePhone(phone) {
     }
     
     // Validation format téléphone Haïtien
-    const phoneRegex = /^(?:\+509|0)\d{8}$/;
+    const phoneRegex = /^\+?[1-9]\d{7,14}$/;
     
     if (!phoneRegex.test(phone)) {
         icon.textContent = '✗';

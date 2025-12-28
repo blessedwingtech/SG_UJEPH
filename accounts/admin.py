@@ -86,3 +86,31 @@ class ProfesseurAdmin(admin.ModelAdmin):
     def get_nom(self, obj):
         return obj.user.get_full_name()
     get_nom.short_description = 'Nom'
+
+
+
+# Dans accounts/admin.py, ajoutez :
+
+from .models import AuditAction
+
+@admin.register(AuditAction)
+class AuditActionAdmin(admin.ModelAdmin):
+    list_display = ['date', 'user', 'action', 'objet', 'faculte']
+    list_filter = ['action', 'user', 'date', 'faculte']
+    search_fields = ['user', 'objet', 'details']
+    readonly_fields = ['full_details']
+    date_hierarchy = 'date'
+    
+    def full_details(self, obj):
+        return f"""
+        Date: {obj.date.strftime('%d/%m/%Y %H:%M:%S')}
+        Utilisateur: {obj.user}
+        Action: {obj.get_action_display()}
+        Objet: {obj.objet}
+        Faculté: {obj.faculte or 'N/A'}
+        Cours: {obj.cours or 'N/A'}
+        
+        Détails:
+        {obj.details}
+        """
+    

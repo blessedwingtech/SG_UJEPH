@@ -31,7 +31,6 @@
             margin: 0;
         }
  
- 
         body {
             display: flex;
             flex-direction: column;
@@ -78,10 +77,10 @@
             background-color: white;
             color: var(--primary-color);
         }
+        
         main {
             flex: 1 0 auto; /* prend tout l'espace disponible */
         }
-
         
         .hero-section {
             background: linear-gradient(rgba(0, 51, 102, 0.9), rgba(0, 34, 68, 0.9)), 
@@ -226,13 +225,11 @@
         }
         
         footer {
-            /* background: linear-gradient(135deg, var(--dark-blue) 0%, #424343 100%); */
             color: white;
             padding: 3rem 0 1.5rem;
             margin-top: 5rem;
             flex-shrink: 0; 
         } 
-
         
         .footer-links a {
             color: rgba(255, 255, 255, 0.8);
@@ -262,6 +259,100 @@
             transform: translateY(-3px);
         }
         
+        /* Styles pour le menu déroulant admin */
+        .admin-dropdown .dropdown-menu {
+            min-width: 280px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .admin-dropdown .dropdown-item {
+            padding: 10px 15px;
+            transition: all 0.2s;
+            border-left: 3px solid transparent;
+        }
+        
+        .admin-dropdown .dropdown-item:hover {
+            background-color: var(--light-blue);
+            border-left-color: var(--accent-color);
+            padding-left: 20px;
+        }
+        
+        .admin-dropdown .dropdown-header {
+            background-color: #f8f9fa;
+            color: var(--primary-color);
+            font-weight: 600;
+            padding: 10px 15px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .admin-dropdown .dropdown-divider {
+            margin: 8px 0;
+        }
+        
+        /* Fix pour les dropdowns sur mobile */
+        @media (max-width: 991.98px) {
+            .navbar-collapse {
+                max-height: 80vh;
+                overflow-y: auto;
+                padding-bottom: 20px;
+            }
+            
+            .admin-dropdown .dropdown-menu {
+                position: static !important;
+                float: none;
+                width: 100%;
+                margin-top: 0.5rem;
+                margin-bottom: 1rem;
+                border: 1px solid rgba(0,0,0,.15);
+                box-shadow: none;
+                border-radius: 8px;
+                background-color: rgba(255, 255, 255, 0.95);
+            }
+            
+            .dropdown .dropdown-menu {
+                position: static !important;
+                transform: none !important;
+                margin-top: 0.5rem;
+                margin-bottom: 1rem;
+                border: 1px solid rgba(0,0,0,.15);
+                background-color: rgba(255, 255, 255, 0.95);
+            }
+            
+            .dropdown-toggle::after {
+                float: right;
+                margin-top: 8px;
+            }
+            
+            /* Espacement sur mobile */
+            .nav-item {
+                margin-bottom: 8px;
+            }
+            
+            .dropdown-item {
+                padding: 10px 20px !important;
+            }
+            
+            /* Texte SG-UJEPH visible sur mobile */
+            .navbar-brand span {
+                display: inline !important; /* Force l'affichage */
+            }
+            
+            .btn-outline-light {
+                padding: 6px 10px !important;
+                font-size: 0.9rem;
+            }
+        }
+        
+        @media (min-width: 992px) {
+            .admin-dropdown .dropdown-menu {
+                min-width: 280px;
+                margin-left: -100px;
+            }
+        }
+        
         /* Animation pour les cartes */
         @keyframes fadeInUp {
             from {
@@ -278,7 +369,7 @@
             animation: fadeInUp 0.6s ease forwards;
         }
         
-        /* Responsive */
+        /* Responsive général */
         @media (max-width: 768px) {
             .hero-title {
                 font-size: 2.5rem;
@@ -286,6 +377,90 @@
             
             .hero-subtitle {
                 font-size: 1.1rem;
+            }
+            
+            .navbar-brand {
+                font-size: 1.2rem;
+            }
+            
+            /* Ajustement pour les très petits écrans */
+            @media (max-width: 400px) {
+                .navbar-brand span {
+                    font-size: 1rem; /* Texte plus petit */
+                }
+                
+                .navbar-brand img {
+                    height: 35px; /* Logo plus petit */
+                }
+            }
+        }
+        
+        /* 🔹 Correction pour le dropdown scrollable */
+        .admin-dropdown .dropdown-menu {
+            min-width: 280px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+            border-radius: 10px;
+            overflow: hidden;
+            max-height: 70vh; /* Hauteur maximale */
+            overflow-y: auto; /* Scroll vertical si nécessaire */
+        }
+        
+        /* Style pour la barre de défilement */
+        .dropdown-menu::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .dropdown-menu::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+        
+        .dropdown-menu::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 3px;
+        }
+        
+        .dropdown-menu::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+        
+        /* Sur PC (grand écran) */
+        @media (min-width: 992px) {
+            .admin-dropdown .dropdown-menu {
+                min-width: 280px;
+                margin-left: -100px;
+                max-height: 80vh; /* Un peu plus grand sur PC */
+            }
+        }
+        
+        /* Sur mobile */
+        @media (max-width: 991.98px) {
+            .admin-dropdown .dropdown-menu {
+                max-height: 60vh; /* Limite sur mobile */
+                overflow-y: auto;
+            }
+            
+            /* Pour tous les dropdowns sur mobile */
+            .dropdown-menu {
+                max-height: 60vh;
+                overflow-y: auto;
+            }
+            
+            /* Pour éviter que le navbar collapse soit trop haut sur mobile */
+            .navbar-collapse {
+                max-height: calc(100vh - 80px); /* Prend toute la hauteur moins la navbar */
+                overflow-y: auto;
+                padding-bottom: 20px;
+                background: linear-gradient(135deg, var(--primary-color) 0%, var(--dark-blue) 100%);
+                border-radius: 0 0 15px 15px;
+                margin-top: 10px;
+            }
+            
+            /* Amélioration de la lisibilité des dropdowns sur mobile */
+            .admin-dropdown .dropdown-menu {
+                background-color: rgba(255, 255, 255, 0.98);
+                border: 1px solid rgba(255, 255, 255, 0.2);
             }
         }
     </style>
@@ -298,17 +473,31 @@
     <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
         <div class="container">
             <a class="navbar-brand" href="{% url 'home' %}">
-                 <img src="{% static 'images/ujeph_logo.png' %}" alt="SG-UJEPH Logo" height="40">
+                <img src="{% static 'images/ujeph_logo.png' %}" alt="SG-UJEPH Logo" height="40">
                 <span>SG-UJEPH</span>
             </a>
             
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <!-- 🔹 Bouton Retour avec responsivité -->
+            <div class="d-flex align-items-center">
+                <button class="btn btn-sm btn-outline-light m-2 d-none d-lg-flex align-items-center" 
+                        onclick="window.history.back()">
+                    <i class="fas fa-arrow-left me-1"></i> Retour
+                </button>
+                <button class="btn btn-sm btn-outline-light m-2 d-flex d-lg-none align-items-center justify-content-center"
+                        onclick="window.history.back()"
+                        style="min-width: 40px; height: 40px;">
+                    <i class="fas fa-arrow-left"></i>Retour
+                </button>
+            </div>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" 
+                    aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
 
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
-                    <!-- Bouton Accueil -->
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <!-- Bouton Accueil - Toujours visible -->
                     <li class="nav-item">
                         <a class="nav-link {% if request.path == '/' %}active{% endif %}" href="{% url 'home' %}">
                             <i class="fas fa-home me-1"></i> Accueil
@@ -317,42 +506,126 @@
                     
                     {% if user.is_authenticated %}
                         {% if user.role == 'admin' %}
-                        
-                            <li class="nav-item"><a class="nav-link" href="{% url 'accounts:gestion_utilisateurs' %}"><i class="bi bi-people-fill me-1"></i> Utilisateurs<i class="bi bi-gear p-2"></i></a></li>
-                            <li class="nav-item"><a class="nav-link" href="{% url 'accounts:liste_etudiants' %}"><i class="fas fa-users me-1"></i> Étudiants</a></li>
-                            <li class="nav-item"><a class="nav-link" href="{% url 'accounts:liste_professeurs' %}"><i class="fas fa-chalkboard-teacher me-1"></i> Professeurs</a></li>
-                            <li class="nav-item"><a class="nav-link" href="{% url 'academics:gestion_cours' %}"><i class="fas fa-book me-1"></i> Cours</a></li>
-                            <li class="nav-item"><a class="nav-link" href="{% url 'grades:validation_notes' %}"><i class="fas fa-clipboard-check me-1"></i> Notes</a></li>
-                            <li class="nav-item"><a class="nav-link" href="{% url 'academics:liste_annonces' %}"><i class="fas fa-bullhorn me-1"></i> Annonces</a></li>
+                            <!-- Menu Administration déroulant -->
+                            <li class="nav-item dropdown admin-dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" role="button" 
+                                   data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="bi bi-gear-fill me-1"></i> Administration
+                                </a>
+                                <ul class="dropdown-menu dropdown-menu-lg-end">
+                                    <li><h6 class="dropdown-header">
+                                        <i class="bi bi-people me-2"></i> Gestion des utilisateurs
+                                    </h6></li>
+                                    <li><a class="dropdown-item" href="{% url 'accounts:gestion_utilisateurs' %}">
+                                        <i class="bi bi-people-fill me-2"></i> Tous les utilisateurs
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="{% url 'accounts:liste_etudiants' %}">
+                                        <i class="fas fa-users me-2"></i> Étudiants
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="{% url 'accounts:liste_professeurs' %}">
+                                        <i class="fas fa-chalkboard-teacher me-2"></i> Professeurs
+                                    </a></li>
+                                    
+                                    <li><hr class="dropdown-divider"></li>
+                                    
+                                    <li><h6 class="dropdown-header">
+                                        <i class="fas fa-graduation-cap me-2"></i> Gestion académique
+                                    </h6></li>
+                                    <li><a class="dropdown-item" href="{% url 'academics:gestion_cours' %}">
+                                        <i class="fas fa-book me-2"></i> Cours
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="{% url 'academics:liste_facultes' %}">
+                                        <i class="fas fa-university me-2"></i> Facultés
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="{% url 'grades:validation_notes' %}">
+                                        <i class="fas fa-clipboard-check me-2"></i> Validation des notes
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="{% url 'grades:gestion_semestres' %}">
+                                        <i class="fas fa-calendar-alt me-2"></i> Actions avancées
+                                    </a></li>
+                                    
+                                    <li><hr class="dropdown-divider"></li>
+                                    
+                                    <li><h6 class="dropdown-header">
+                                        <i class="bi bi-clipboard-data me-2"></i> Surveillance
+                                    </h6></li>
+                                    <li><a class="dropdown-item" href="{% url 'accounts:audit' %}">
+                                        <i class="bi bi-clipboard-check me-2"></i> Journal d'audit
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="{% url 'accounts:login_attempts' %}">
+                                        <i class="bi bi-shield-exclamation me-2"></i> Tentatives de connexion
+                                    </a></li>
+                                    
+                                    <li><hr class="dropdown-divider"></li>
+                                    
+                                    <li><h6 class="dropdown-header">
+                                        <i class="fas fa-bullhorn me-2"></i> Communication
+                                    </h6></li>
+                                    <li><a class="dropdown-item" href="{% url 'academics:liste_annonces' %}">
+                                        <i class="fas fa-bullhorn me-2"></i> Annonces
+                                    </a></li>
+                                </ul>
+                            </li>
 
                         {% elif user.role == 'prof' %}
-                            <li class="nav-item"><a class="nav-link" href="{% url 'academics:mes_cours_professeur' %}"><i class="fas fa-book-open me-1"></i> Mes Cours</a></li>
-                            <li class="nav-item"><a class="nav-link" href="{% url 'academics:liste_annonces' %}"><i class="fas fa-bullhorn me-1"></i> Annonces</a></li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'academics:mes_cours_professeur' %}">
+                                    <i class="fas fa-book-open me-1"></i> Mes Cours
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'academics:liste_annonces' %}">
+                                    <i class="fas fa-bullhorn me-1"></i> Annonces
+                                </a>
+                            </li>
 
                         {% elif user.role == 'etudiant' %}
-                            <li class="nav-item"><a class="nav-link" href="{% url 'academics:mes_cours_etudiant' %}"><i class="fas fa-book-reader me-1"></i> Mes Cours</a></li>
-                            <li class="nav-item"><a class="nav-link" href="{% url 'grades:consulter_notes_etudiant' %}"><i class="fas fa-chart-line me-1"></i> Mes Notes</a></li>
-                            <li class="nav-item"><a class="nav-link" href="{% url 'academics:annonces_actives' %}"><i class="fas fa-newspaper me-1"></i> Actualités</a></li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'academics:mes_cours_etudiant' %}">
+                                    <i class="fas fa-book-reader me-1"></i> Mes Cours
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'grades:consulter_notes_etudiant' %}">
+                                    <i class="fas fa-chart-line me-1"></i> Mes Notes
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'academics:annonces_actives' %}">
+                                    <i class="fas fa-newspaper me-1"></i> Actualités
+                                </a>
+                            </li>
                         {% endif %}
                     {% endif %}
                 </ul>
 
-                <div class="d-flex align-items-center">
+                <div class="d-flex align-items-center mt-3 mt-lg-0">
                     {% if user.is_authenticated %}
                         <div class="dropdown">
                             <button class="btn btn-outline-light dropdown-toggle d-flex align-items-center" type="button" 
-                                    id="userDropdown" data-bs-toggle="dropdown">
-                                <div class="me-2">
+                                    id="userDropdown" data-bs-toggle="dropdown" 
+                                    aria-expanded="false">
+                                <div class="me-1 me-lg-2">
                                     <i class="fas fa-user-circle fs-5"></i>
                                 </div>
-                                <div class="text-start lh-1">
-                                    <small hidden class="text-nowrap">Bienvenue</small>
+                                <div class="text-start lh-1 d-none d-lg-block">
                                     <div class="fw-medium text-nowrap">{{ user.first_name|default:user.username }}</div>
                                 </div>
+                                <span class="d-lg-none ms-2">{{ user.first_name|default:user.username|truncatechars:12 }}</span>
                             </button>
-                            <ul class="dropdown-menu dropdown-menu-end">
-                                <li><a class="dropdown-item" href="{% url 'accounts:dashboard' %}"><i class="fas fa-tachometer-alt me-2"></i> Tableau de bord</a></li>
-                                <li><a class="dropdown-item" href="{% url 'accounts:mon_profil' %}"><i class="fas fa-user-edit me-2"></i> Mon profil</a></li>
+                            <ul class="dropdown-menu dropdown-menu-end dropdown-menu-lg-start">
+                                <li><a class="dropdown-item" href="{% url 'accounts:dashboard' %}">
+                                    <i class="fas fa-tachometer-alt me-2"></i> Tableau de bord
+                                </a></li>
+                                <li><a class="dropdown-item" href="{% url 'accounts:mon_profil' %}">
+                                    <i class="fas fa-user-edit me-2"></i> Mon profil
+                                </a></li>
+                                {% if user.role == 'admin' %}
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="{% url 'accounts:audit' %}">
+                                    <i class="bi bi-clipboard-data me-2"></i> Audit système
+                                </a></li>
+                                {% endif %}
                                 <li><hr class="dropdown-divider"></li>
                                 <li>
                                     <form method="post" action="{% url 'accounts:logout' %}" class="d-inline">
@@ -368,10 +641,7 @@
                         {% with request.resolver_match.url_name as url_name %}
                             {% if url_name != 'login' %}
                                 <a href="{% url 'accounts:login' %}" class="btn btn-light me-2">
-                                    <i class="fas fa-sign-in-alt me-2"></i> Connexion
-                                </a>
-                                <a hidden href="#" class="btn btn-outline-light">
-                                    <i class="fas fa-user-plus me-2"></i> Inscription
+                                    <i class="fas fa-sign-in-alt me-2"></i> <span class="">Connexion</span>
                                 </a>
                             {% endif %}
                         {% endwith %}
@@ -384,36 +654,34 @@
     <!-- 🔹 Zone principale -->
     <main>
         <!-- ✅ Zone messages globale -->
-    {% if messages %}
-    <div class="toast-container position-fixed top-50 start-50 translate-middle p-3" style="z-index: 1080;">
-        {% for message in messages %}
-        <div class="toast align-items-center text-bg-{{ message.tags }} border-0 mb-2"
-            role="alert" aria-live="assertive" aria-atomic="true"
-            data-bs-delay="3000">
+        {% if messages %}
+        <div class="toast-container position-fixed top-50 start-50 translate-middle p-3" style="z-index: 1080;">
+            {% for message in messages %}
+            <div class="toast align-items-center text-bg-{{ message.tags }} border-0 mb-2"
+                role="alert" aria-live="assertive" aria-atomic="true"
+                data-bs-delay="3000">
 
-            <div class="d-flex">
-                <div class="toast-body">
-                    {% if message.tags == 'success' %}
-                        <i class="bi bi-check-circle-fill me-2"></i>
-                    {% elif message.tags == 'error' or message.tags == 'danger' %}
-                        <i class="bi bi-x-circle-fill me-2"></i>
-                    {% elif message.tags == 'warning' %}
-                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                    {% else %}
-                        <i class="bi bi-info-circle-fill me-2"></i>
-                    {% endif %}
-                    {{ message|safe }}
+                <div class="d-flex">
+                    <div class="toast-body">
+                        {% if message.tags == 'success' %}
+                            <i class="bi bi-check-circle-fill me-2"></i>
+                        {% elif message.tags == 'error' or message.tags == 'danger' %}
+                            <i class="bi bi-x-circle-fill me-2"></i>
+                        {% elif message.tags == 'warning' %}
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        {% else %}
+                            <i class="bi bi-info-circle-fill me-2"></i>
+                        {% endif %}
+                        {{ message|safe }}
+                    </div>
+                    <button type="button"
+                            class="btn-close btn-close-white me-2 m-auto"
+                            data-bs-dismiss="toast"></button>
                 </div>
-                <button type="button"
-                        class="btn-close btn-close-white me-2 m-auto"
-                        data-bs-dismiss="toast"></button>
             </div>
+            {% endfor %}
         </div>
-        {% endfor %}
-    </div>
-    {% endif %}
-
-
+        {% endif %}
 
         {% block content %}
         <!-- Contenu spécifique à chaque page -->
@@ -421,48 +689,45 @@
     </main>
 
     <!-- 🔹 Pied de page -->
-<footer class="mt-auto">
+    <footer class="mt-auto">
+        <!-- Ligne contact principale -->
+        <div class="bg-none text-dark py-3">
+            <div class="container">
+                <div class="d-flex flex-column flex-md-row justify-content-center align-items-center text-center text-md-start gap-3">
+                    <!-- Téléphone -->
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="fas fa-phone text-success"></i>
+                        <span>+509 3864 3657 / +509 4207 7766</span>
+                    </div>
 
-  <!-- Ligne contact principale -->
-  <div class="bg-none text-dark py-3">
-    <div class="container">
-      <div class="d-flex flex-column flex-md-row justify-content-center align-items-center text-center text-md-start gap-3">
+                    <!-- Séparateur -->
+                    <div class="d-none d-md-block text-muted">|</div>
 
-        <!-- Téléphone -->
-        <div class="d-flex align-items-center gap-2">
-          <i class="fas fa-phone text-success"></i>
-          <span>+509 3864 3657 / +509 4207 7766</span>
+                    <!-- Adresse -->
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="fas fa-map-marker-alt text-danger"></i>
+                        <span>83, Avenue Toussaint Louverture, Pignon, Haïti</span>
+                    </div>
+
+                    <!-- Séparateur -->
+                    <div class="d-none d-md-block text-muted">|</div>
+
+                    <!-- Email -->
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="fas fa-envelope text-primary"></i>
+                        <a style="text-decoration: none;" class="text-secondary" href="mailto:info@ujeph.edu.ht">
+                            <span>info@ujeph.edu.ht</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <!-- Séparateur -->
-        <div class="d-none d-md-block text-muted">|</div>
-
-        <!-- Adresse -->
-        <div class="d-flex align-items-center gap-2">
-          <i class="fas fa-map-marker-alt text-danger"></i>
-          <span>83, Avenue Toussaint Louverture, Pignon, Haïti</span>
+        <!-- Ligne copyright -->
+        <div class="bg-secondary text-white text-center py-3 small">
+            &copy; {{ now|date:"Y" }} SG-UJEPH – Tous droits réservés. Développé par Trini Tech.
         </div>
-
-        <!-- Séparateur -->
-        <div class="d-none d-md-block text-muted">|</div>
-
-        <!-- Email -->
-        <div class="d-flex align-items-center gap-2">
-          <i class="fas fa-envelope text-primary"></i>
-          <a style="text-decoration: none;" class="text-secondary" href="mailto:info@ujeph.edu.ht"><span>info@ujeph.edu.ht</span></a>
-        </div>
-
-      </div>
-    </div>
-  </div>
-
-  <!-- Ligne copyright -->
-  <div class="bg-secondary text-white text-center py-3 small">
-    &copy; {{ now|date:"Y" }} BitTonik – Tous droits réservés. Powered by Blessed Wing Technology.
-  </div>
-
-</footer>
-
+    </footer>
 
     <!-- ✅ Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -471,10 +736,36 @@
         document.querySelectorAll('.toast').forEach(toastEl => {
             new bootstrap.Toast(toastEl).show();
         });
+        
+        // Gestion du menu actif pour les dropdowns
+        const currentPath = window.location.pathname;
+        document.querySelectorAll('.nav-link:not(.dropdown-toggle)').forEach(link => {
+            if (link.getAttribute('href') === currentPath) {
+                link.classList.add('active');
+                // Si c'est dans un dropdown, marquer le parent comme actif
+                const dropdown = link.closest('.dropdown');
+                if (dropdown) {
+                    const dropdownToggle = dropdown.querySelector('.dropdown-toggle');
+                    if (dropdownToggle) {
+                        dropdownToggle.classList.add('active');
+                    }
+                }
+            }
+        });
+        
+        // Correction pour les dropdowns sur mobile
+        const dropdownToggles = document.querySelectorAll('.dropdown-toggle');
+        dropdownToggles.forEach(toggle => {
+            toggle.addEventListener('click', function(e) {
+                if (window.innerWidth < 992) {
+                    // Sur mobile, empêcher la propagation pour éviter la fermeture du navbar
+                    e.stopPropagation();
+                }
+            });
+        });
     });
     </script>
 
-    
     <!-- ✅ Scripts personnalisés -->
     <script>
         // Animation au défilement
@@ -485,19 +776,321 @@
                 card.classList.add('animate-card');
                 card.style.animationDelay = `${index * 0.1}s`;
             });
-            
-            // Gestion du menu actif
-            const currentPath = window.location.pathname;
-            document.querySelectorAll('.nav-link').forEach(link => {
-                if (link.getAttribute('href') === currentPath) {
-                    link.classList.add('active');
-                }
-            });
         });
     </script>
     
     {% block extra_scripts %}{% endblock %}
  
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- Dans base.html, APRÈS le footer, AVANT les scripts -->
+{% if user.is_authenticated %}
+<!-- 🔹 DONNÉES POUR L'AUTO-LOGOUT (dans le HTML, pas dans JS) -->
+<div id="autoLogoutData" 
+     data-warning="{% if auto_logout_warning %}true{% else %}false{% endif %}"
+     data-warning-time="{{ auto_logout_warning_time|default:0 }}"
+     data-login-url="{% url 'accounts:login' %}"
+     data-update-url="{% url 'accounts:update_activity' %}"
+     data-csrf-token="{{ csrf_token }}"
+     style="display: none;">
+</div>
+{% endif %}
+<!-- 🔹 SCRIPT AUTO-LOGOUT 100% PUR -->
+<script>
+    // ============================================
+// AUTO-LOGOUT WARNING SYSTEM - VERSION CORRIGÉE
+// ============================================
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log("Auto-logout system loading...");
+    
+    // 1. Récupérer les données depuis l'élément HTML
+    const dataElement = document.getElementById('autoLogoutData');
+    
+    if (!dataElement) {
+        console.log("User not authenticated or no auto-logout data");
+        return;
+    }
+    
+    // Extraire les données
+    const hasWarning = dataElement.dataset.warning === 'true';
+    const warningTime = parseInt(dataElement.dataset.warningTime) || 0;
+    const loginUrl = dataElement.dataset.loginUrl;
+    const updateUrl = dataElement.dataset.updateUrl;
+    const csrfToken = dataElement.dataset.csrfToken;
+    
+    console.log("Auto-logout data:", {
+        hasWarning: hasWarning,
+        warningTime: warningTime,
+        loginUrl: loginUrl,
+        updateUrl: updateUrl,
+        csrfToken: csrfToken ? "Present" : "Missing"
+    });
+    
+    // 2. VÉRIFIER SI TIMEOUT ATTEINT (warningTime = 0)
+    if (hasWarning && warningTime === 0) {
+        console.log("🚨 TIMEOUT REACHED - Handling immediate logout");
+        handleAutoLogoutWhenTimeout();
+        return; // Ne pas continuer, déconnexion en cours
+    }
+    
+    // 3. Si avertissement actif avec temps restant, l'afficher
+    if (hasWarning && warningTime > 0) {
+        console.log("🚨 Displaying auto-logout warning:", warningTime, "seconds remaining");
+        showAutoLogoutWarning(warningTime, loginUrl, updateUrl, csrfToken);
+    }
+    
+    // 4. Détection d'activité pour tous les utilisateurs connectés
+    setupActivityDetection(updateUrl, csrfToken);
+});
+
+// ============================================
+// FONCTIONS
+// ============================================
+
+// Fonction pour gérer le timeout immédiat
+function handleAutoLogoutWhenTimeout() {
+    const dataElement = document.getElementById('autoLogoutData');
+    if (!dataElement) return false;
+    
+    const warningTime = parseInt(dataElement.dataset.warningTime) || 0;
+    const loginUrl = dataElement.dataset.loginUrl;
+    
+    // Si warning_time = 0, déconnecter immédiatement
+    if (warningTime === 0) {
+        console.log("🚨 AUTO-LOGOUT: Timeout reached, redirecting to login");
+        
+        // Vérifier si SweetAlert2 est disponible
+        if (typeof Swal !== 'undefined') {
+            // Afficher un dernier avertissement avant redirection
+            Swal.fire({
+                icon: 'warning',
+                title: 'Session expirée',
+                text: 'Vous avez été déconnecté automatiquement après 5 minutes d\'inactivité.',
+                timer: 3000,
+                timerProgressBar: true,
+                showConfirmButton: false,
+                allowOutsideClick: false,
+                allowEscapeKey: false
+            }).then(() => {
+                window.location.href = loginUrl;
+            });
+            
+            // Redirection de sécurité après 5 secondes max
+            setTimeout(() => {
+                window.location.href = loginUrl;
+            }, 5000);
+        } else {
+            // Fallback sans SweetAlert2
+            alert('Session expirée. Vous allez être redirigé vers la page de connexion.');
+            setTimeout(() => {
+                window.location.href = loginUrl;
+            }, 2000);
+        }
+        
+        return true;
+    }
+    
+    return false;
+}
+
+function showAutoLogoutWarning(remainingTime, loginUrl, updateUrl, csrfToken) {
+    // Vérifier si timeout déjà atteint (sécurité)
+    if (handleAutoLogoutWhenTimeout()) {
+        return;
+    }
+    
+    let remaining = remainingTime;
+    let countdownInterval;
+    
+    // Créer l'avertissement
+    const warningDiv = document.createElement('div');
+    warningDiv.id = 'autoLogoutWarning';
+    warningDiv.className = 'alert alert-warning alert-dismissible fade show position-fixed';
+    warningDiv.style.cssText = `
+        top: 20px;
+        right: 20px;
+        z-index: 9999;
+        max-width: 400px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        border-left: 5px solid #ffc107;
+        animation: slideInRight 0.3s ease-out;
+    `;
+    
+    warningDiv.innerHTML = `
+        <div class="d-flex align-items-center">
+            <i class="bi bi-hourglass-split fs-4 me-3 text-warning"></i>
+            <div class="flex-grow-1">
+                <h6 class="mb-1 fw-bold">⚠ Déconnexion imminente</h6>
+                <p class="mb-1">Vous serez déconnecté dans <span id="logoutCountdown">${remaining}</span> seconde(s) pour inactivité.</p>
+                <div class="progress mt-2" style="height: 6px;">
+                    <div id="logoutProgressBar" class="progress-bar bg-warning progress-bar-striped progress-bar-animated" 
+                         role="progressbar" style="width: ${(remaining/60)*100}%"></div>
+                </div>
+                <p class="small mb-0 mt-1"><i class="bi bi-lightbulb me-1"></i> Interagissez avec la page pour rester connecté</p>
+            </div>
+            <button type="button" class="btn-close" id="closeWarningBtn"></button>
+        </div>
+    `;
+    
+    document.body.appendChild(warningDiv);
+    
+    // Compte à rebours
+    countdownInterval = setInterval(() => {
+        remaining--;
+        
+        if (remaining <= 0) {
+            clearInterval(countdownInterval);
+            warningDiv.remove();
+            
+            // Utiliser la fonction de timeout
+            handleAutoLogoutWhenTimeout();
+            return;
+        }
+        
+        // Mettre à jour l'affichage
+        const countdownElement = document.getElementById('logoutCountdown');
+        const progressBar = document.getElementById('logoutProgressBar');
+        
+        if (countdownElement) {
+            countdownElement.textContent = remaining;
+        }
+        
+        if (progressBar) {
+            const progressPercent = (remaining/60)*100;
+            progressBar.style.width = `${progressPercent}%`;
+            
+            // Changer la couleur
+            if (remaining <= 10) {
+                progressBar.className = 'progress-bar bg-danger progress-bar-striped progress-bar-animated';
+                warningDiv.className = 'alert alert-danger alert-dismissible fade show position-fixed';
+                warningDiv.style.borderLeft = '5px solid #dc3545';
+            } else if (remaining <= 30) {
+                progressBar.className = 'progress-bar bg-warning progress-bar-striped progress-bar-animated';
+            }
+        }
+    }, 1000);
+    
+    // Bouton fermer
+    document.getElementById('closeWarningBtn').addEventListener('click', function() {
+        clearInterval(countdownInterval);
+        warningDiv.remove();
+        console.log("Warning closed by user");
+        sendActivityUpdate(updateUrl, csrfToken);
+    });
+    
+    // Quand l'avertissement est supprimé (par activité), envoyer une requête
+    const observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            if (!document.getElementById('autoLogoutWarning')) {
+                sendActivityUpdate(updateUrl, csrfToken);
+                observer.disconnect();
+            }
+        });
+    });
+    
+    observer.observe(document.body, { childList: true, subtree: true });
+}
+
+function setupActivityDetection(updateUrl, csrfToken) {
+    if (!updateUrl || !csrfToken) {
+        console.log("Activity detection disabled: missing URL or CSRF token");
+        return;
+    }
+    
+    let lastActivityTime = Date.now();
+    let activityDebounceTimer;
+    
+    function updateUserActivity() {
+        const now = Date.now();
+        
+        // Éviter trop de requêtes
+        if (now - lastActivityTime < 2000) {
+            return;
+        }
+        
+        lastActivityTime = now;
+        
+        clearTimeout(activityDebounceTimer);
+        
+        activityDebounceTimer = setTimeout(() => {
+            // Supprimer l'avertissement s'il existe
+            const warningDiv = document.getElementById('autoLogoutWarning');
+            if (warningDiv) {
+                warningDiv.remove();
+                console.log("Warning removed due to user activity");
+            }
+            
+            // Envoyer la requête
+            sendActivityUpdate(updateUrl, csrfToken);
+        }, 500);
+    }
+    
+    // Événements à surveiller
+    const events = [
+        'mousedown', 'mouseup', 'mousemove', 'click', 'dblclick',
+        'keydown', 'keyup', 'keypress',
+        'touchstart', 'touchend', 'touchmove',
+        'scroll', 'focus', 'blur', 'change', 'input', 'submit'
+    ];
+    
+    events.forEach(eventName => {
+        document.addEventListener(eventName, updateUserActivity, { passive: true });
+    });
+    
+    console.log("Activity detection setup complete");
+}
+
+function sendActivityUpdate(updateUrl, csrfToken) {
+    if (!updateUrl || !csrfToken) return;
+    
+    fetch(updateUrl, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken,
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({ timestamp: Date.now() })
+    })
+    .then(response => {
+        if (response.ok) {
+            console.log("Activity updated successfully");
+        }
+    })
+    .catch(error => {
+        console.log("Activity update failed (silent error):", error);
+    });
+}
+
+// Ajouter les styles CSS
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideInRight {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+    
+    .progress-bar-animated {
+        animation: progress-bar-stripes 1s linear infinite;
+    }
+    
+    @keyframes progress-bar-stripes {
+        0% {
+            background-position: 1rem 0;
+        }
+        100% {
+            background-position: 0 0;
+        }
+    }
+`;
+document.head.appendChild(style);
+</script>
+
 </body>
 </html>

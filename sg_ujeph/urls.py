@@ -30,6 +30,7 @@ urlpatterns = [
     path('comptes/', include('accounts.urls', namespace='accounts')),
     path('notes/', include('grades.urls', namespace='grades')),  # ✅ AJOUTER
     path('academique/', include('academics.urls', namespace='academics')),  # ✅ AJOUTER
+    
 ]
 
 if settings.DEBUG:

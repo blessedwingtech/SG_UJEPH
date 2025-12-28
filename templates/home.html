@@ -6,11 +6,11 @@
 {% block extra_head %}
 <style>
     /* Styles supplémentaires pour la page d'accueil */
-    .hero-section {
+    /* .hero-section {
         min-height: 80vh;
         display: flex;
         align-items: center;
-    }
+    } */
     
     .cta-buttons .btn {
         padding: 12px 30px;
@@ -111,18 +111,72 @@
             font-size: 2rem;
         }
     }
+/* scroll to top */
+    #goUpBtn {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    display: none; /* caché par défaut */
+    z-index: 1000;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+    transition: opacity 0.3s ease;
+    }
+
+    #goUpBtn.show {
+    display: inline-block;
+    opacity: 1;
+    } 
+    
+    /* slide en arriere plan */
+    .hero-section {
+  position: relative;
+  min-height: 100vh; /* occupe toute la hauteur */
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  transition: background-image 1s ease-in-out;
+}
+
+/* Optionnel : overlay sombre pour lisibilité du texte */
+.hero-section::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    rgba(1, 14, 48, 0.6), 
+    rgba(0,0,0,0.7)
+  );
+
+  z-index: 1;
+}
+
+.hero-section .container {
+  position: relative;
+  z-index: 2; /* garde ton contenu au-dessus du fond */
+}
 </style>
+
+ 
 {% endblock %}
 
 {% block content %}
 <!-- Section Héro -->
-<section class="hero-section">
+<section class="hero-section" id="top">
     <div class="container">
         <div class="row align-items-center">
-            <div class="col-lg-6">
-                <span class="badge bg-accent-color text-white px-3 py-2 mb-3" style="font-size: 1rem;">
-                    <i class="fas fa-star me-2"></i>Université d'excellence
-                </span>
+            <div class="badge bg-accent-color text-white px-3 py-2 mb-5 d-flex justify-content-between align-items-center w-100"
+                    style="font-size: 1rem;">
+
+                    <span>
+                        <i class="fas fa-star me-2"></i> Université d'excellence
+                    </span> 
+                    {% if user.is_authenticated and user.role == 'admin' %}
+                    <a href="{% url 'accounts:creer_etudiant' %}" class="btn btn-light btn-sm">
+                        <i class="bi bi-person-plus"></i> Inscrire un Étudiant
+                    </a>
+                    {% endif %}
+                </div>
+            <div class="col-lg-6"> 
                 <h1 class="hero-title display-3 fw-bold mb-4">
                     Bienvenue à l'<span class="text-warning">UJEPH</span>
                 </h1>
@@ -136,7 +190,7 @@
                         <a href="{% url 'accounts:login' %}" class="btn btn-primary btn-lg">
                             <i class="fas fa-sign-in-alt me-2"></i>Portail étudiant
                         </a>
-                        <a href="#" class="btn btn-outline-primary btn-lg">
+                        <a href="#facultes" class="btn btn-outline-primary btn-lg">
                             <i class="fas fa-search me-2"></i>Découvrir nos programmes
                         </a>
                     {% else %}
@@ -182,19 +236,19 @@
         </div>
         
         <div class="row text-center">
-            <div class="col-md-3 col-6 mb-4">
+            <div class="col-md-4 col-6 mb-4">
                 <div class="counter-item">
                     <div class="counter-number" data-target="{% if total_etudiants %}{{ total_etudiants }}{% else %}500{% endif %}">0</div>
                     <h5>Étudiants</h5>
                 </div>
             </div>
-            <div class="col-md-3 col-6 mb-4">
+            <div class="col-md-4 col-6 mb-4">
                 <div class="counter-item">
                     <div class="counter-number" data-target="{% if total_professeurs %}{{ total_professeurs }}{% else %}20{% endif %}">0</div>
                     <h5>Professeurs</h5>
                 </div>
             </div>
-            <div class="col-md-3 col-6 mb-4">
+            <div class="col-md-4 col-6 mb-4">
                 <div class="counter-item">
                     <div class="counter-number" data-target="{% if total_facultes %}{{ total_facultes }}{% else %}8{% endif %}">0</div>
                     <h5>Facultés</h5>
@@ -426,7 +480,7 @@
             <div class="col-lg-6 mb-5 mb-lg-0">
                 <div class="video-wrapper">
                     <div class="ratio ratio-16x9">
-                        <iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ" 
+                        <iframe src="https://youtu.be/Ni3S_jwfkQE" 
                                 title="Présentation UJEPH" 
                                 frameborder="0" 
                                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
@@ -510,6 +564,10 @@
   </div>
 </div>
 
+<!-- Bouton Go Up -->
+<a href="#top" id="goUpBtn" class="btn btn-primary btn-lg rounded-circle">
+  <i class="bi bi-arrow-up"></i>
+</a>
 
 {% endblock %}
 
@@ -618,7 +676,45 @@ $(document).ready(function() {
         });
     });
 });
+
+//go to up 
+
+// Sélection du bouton
+const goUpBtn = document.getElementById("goUpBtn");
+
+// Écoute du scroll
+window.addEventListener("scroll", () => {
+  if (window.scrollY > 200) { // seuil en pixels
+    goUpBtn.classList.add("show");
+  } else {
+    goUpBtn.classList.remove("show");
+  }
+});
+
+
+/* pour slide en arriere plan */
+document.addEventListener("DOMContentLoaded", function () {
+  const hero = document.querySelector(".hero-section");
+
+  const images = [
+    "{% static 'images/slide/campu.jpg' %}",
+    "{% static 'images/slide/campus.jpg' %}",
+    "{% static 'images/slide/etu.webp' %}",
+    "{% static 'images/slide/student.jpg' %}"
+  ];
+
+  let current = 0;
+
+  function changeBackground() {
+    hero.style.backgroundImage = `url(${images[current]})`;
+    current = (current + 1) % images.length;
+  }
+
+  // première image au chargement
+  changeBackground();
+
+  // change toutes les 5 secondes
+  setInterval(changeBackground, 5000);
+});
 </script>
-
-
 {% endblock %}

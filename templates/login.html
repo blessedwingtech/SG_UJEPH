@@ -147,6 +147,72 @@
     @keyframes spin {
         to { transform: rotate(360deg); }
     }
+
+    /* style supplemenyt */
+    /* Bouton pour voir/masquer le mot de passe */
+.input-group .btn {
+    border: 2px solid #ecf0f1;
+    border-left: none;
+    background: #f8f9fa;
+    transition: all 0.3s;
+}
+
+.input-group .btn:hover {
+    background: #e9ecef;
+    border-color: #3498db;
+}
+
+.input-group .login-input {
+    border-right: none;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.input-group .btn {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+
+/* Style pour l'avertissement */
+.alert-warning {
+    border-left: 5px solid #ffc107;
+}
+
+
+/* Style amélioré pour le champ mot de passe */
+.form-switch .form-check-input {
+    width: 2.5em;
+    height: 1.25em;
+    cursor: pointer;
+}
+
+.form-switch .form-check-input:checked {
+    background-color: #3498db;
+    border-color: #3498db;
+}
+
+.form-switch .form-check-input:focus {
+    box-shadow: 0 0 0 0.25rem rgba(52, 152, 219, 0.25);
+}
+
+.input-group-text {
+    border: 2px solid #ecf0f1;
+    background-color: #f8f9fa;
+    transition: all 0.3s;
+}
+
+.input-group:focus-within .input-group-text {
+    border-color: #3498db;
+    background-color: white;
+}
+
+.input-group .login-input {
+    border-right: none;
+}
+
+.input-group .login-input.border-start-0 {
+    border-left: none;
+}
 </style>
 
 <div class="login-page-wrapper">
@@ -163,12 +229,57 @@
                 </div>
             {% endfor %}
         {% endif %}
-        
+{% if remaining_attempts is not None and remaining_attempts < 5 %}
+<div class="alert alert-warning mb-3">
+    <div class="d-flex align-items-center">
+        <i class="bi bi-exclamation-triangle fs-4 me-3"></i>
+        <div>
+            <h6 class="mb-1">Attention</h6>
+            <p class="mb-0">
+                Il vous reste <strong>{{ remaining_attempts }}</strong> tentative(s) de connexion.
+                {% if remaining_attempts == 1 %}
+                <br><small class="text-danger">Dernière tentative !</small>
+                {% endif %}
+            </p>
+        </div>
+    </div>
+</div>
+{% endif %}
+
         {% if error %}
-            <div class="alert alert-danger mb-3">
-                {{ error }}
+            <div class="alert {% if error_type == 'account_disabled' %}alert-warning
+                            {% else %}alert-danger{% endif %} mb-3">
+                {% if error_type == 'account_disabled' %}
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-person-x fs-4 me-3"></i>
+                    <div>
+                        <h6 class="mb-1">Compte désactivé</h6>
+                        <p class="mb-0">{{ error }}</p>
+                    </div>
+                </div>
+                {% else %}
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-shield-exclamation fs-4 me-3"></i>
+                    <div>
+                        <h6 class="mb-1">Échec de connexion</h6>
+                        <p class="mb-0">{{ error }}</p>
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if account_disabled %}
+                <div class="mt-3 pt-2 border-top">
+                    <p class="small mb-1"><strong>Support technique :</strong></p>
+                    <ul class="small mb-0 ps-3">
+                        <li>📧 <a href="mailto:admin@ujeph.edu" class="alert-link">admin@ujeph.edu</a></li>
+                        <li>📞 (509) XX XX XX XX</li>
+                        <li>🕘 Lundi-Vendredi, 8h-16h</li>
+                    </ul>
+                </div>
+                {% endif %}
             </div>
         {% endif %}
+     
         
         <form method="post" id="loginForm" novalidate>
             {% csrf_token %}
@@ -189,16 +300,36 @@
             </div>
             
             <div class="form-group">
-                <label for="password">Mot de passe</label>
-                <input type="password" id="password" name="password" 
-                       class="login-input"
-                       placeholder="Entrez votre mot de passe"
-                       required>
+                <label for="password" class="form-label">
+                    <i class="bi bi-key me-2"></i>Mot de passe
+                </label>
+                
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-end-0">
+                        <i class="bi bi-lock text-muted"></i>
+                    </span>
+                    <input type="password" id="password" name="password" 
+                        class="form-control login-input border-start-0"
+                        placeholder="Votre mot de passe"
+                        required>
+                    
+                    <div class="input-group-text bg-light border-start-0">
+                        <div class="form-check form-switch mb-0">
+                            <input class="form-check-input" type="checkbox" 
+                                id="showPassword" role="switch"
+                                style="cursor: pointer;">
+                            <label class="form-check-label small ms-2" 
+                                for="showPassword" style="cursor: pointer; color: #666;">
+                                👁️
+                            </label>
+                        </div>
+                    </div>
+                </div>
             </div>
             
             <div class="mou">
-                <p class="small">Mot de passe oublié? 
-                    <a href="mailto:admin@ujeph.edu">Contacter l'administrateur</a>
+                <p class="small">
+                    <a href="{% url 'accounts:password_reset' %}">Mot de passe oublié?  </a>
                 </p>
             </div>
             
@@ -371,8 +502,10 @@ function checkUsernameExistence(username) {
     .catch(error => {
         console.error('Erreur fetch:', error);
         feedback.className = 'validation-feedback text-warning';
-        iconText.textContent = '⚠';
-        usernameMessage.textContent = 'Impossible de vérifier (erreur réseau)';
+        iconText.textContent = '';
+        //iconText.textContent = '⚠';
+        usernameMessage.textContent = '';
+        //usernameMessage.textContent = 'Impossible de vérifier (erreur réseau)';
         usernameInput.classList.remove('is-valid', 'is-invalid');
     });
 }
@@ -419,6 +552,37 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Ajouter un log pour debug
+    console.log('Page login chargée');
+});
+
+//js pour supplement..
+// Afficher/masquer le mot de passe
+// Afficher/masquer le mot de passe avec checkbox
+document.getElementById('showPassword').addEventListener('change', function() {
+    const passwordInput = document.getElementById('password');
+    const label = this.nextElementSibling;
+    
+    if (this.checked) {
+        passwordInput.type = 'text';
+        label.innerHTML = '🙈';
+    } else {
+        passwordInput.type = 'password';
+        label.innerHTML = '👁️';
+    }
+});
+
+// Focus automatique sur le champ username
+document.addEventListener('DOMContentLoaded', function() {
+    const usernameInput = document.getElementById('username');
+    if (usernameInput) {
+        usernameInput.focus();
+    }
+    
+    // Validation initiale si déjà rempli
+    if (usernameInput.value) {
+        validateUsername(usernameInput.value);
+    }
+    
     console.log('Page login chargée');
 });
 </script>

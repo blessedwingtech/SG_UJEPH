@@ -35,6 +35,11 @@ def create_user_profile(sender, instance, created, **kwargs):
     Crée automatiquement un profil quand un User est créé avec un rôle.
     MAIS seulement si le profil n'existe pas déjà
     """
+    # ⚠️ AJOUTER CETTE VÉRIFICATION !
+    if hasattr(instance, '_profile_created_manually'):
+        print(f"⏭️ Signal sauté pour {instance.username} (_profile_created_manually=True)")
+        return
+    
     if created and instance.role:
         print(f"🔄 Signal déclenché pour {instance.username} (rôle: {instance.role})")
 
@@ -115,9 +120,9 @@ def assigner_cours_automatiquement(etudiant_instance):
         from academics.models import Cours
         
         # ✅ CORRECTION : DÉTERMINER LE SEMESTRE
-        mois = timezone.now().month
-        semestre = 'S1' if (9 <= mois <= 12 or mois == 1) else 'S2'
-        
+        # mois = timezone.now().month
+        # semestre = 'S1' if (9 <= mois <= 12 or mois == 1) else 'S2'
+        semestre = etudiant_instance.semestre_courant
         # ✅ CORRECTION : FILTRER PAR SEMESTRE
         cours_disponibles = Cours.objects.filter(
             faculte=etudiant_instance.faculte,

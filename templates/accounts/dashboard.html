@@ -29,6 +29,26 @@
         </div>
     </div>
 
+<!-- SECTION SUPERUSER -->
+{% if is_django_superuser %}
+<div class="alert alert-danger mb-4 border-start border-5 border-danger">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h5 class="mb-1">
+                <i class="bi bi-shield-fill-check me-2"></i>
+                Super Administrateur Système
+            </h5>
+            <p class="mb-0 small">Vous avez tous les privilèges d'administration.</p>
+        </div>
+        <div>
+            <a href="{% url 'accounts:creer_admin_systeme' %}" class="btn btn-danger px-4">
+                <i class="bi bi-person-plus me-1"></i> Créer un Administrateur
+            </a>
+        </div>
+    </div>
+</div>
+{% endif %}    
+
     {% if role == 'admin' %}
         <!-- DASHBOARD ADMIN -->
         <!-- Statistiques en grille responsive -->

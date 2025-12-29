@@ -66,11 +66,15 @@
                                        class="btn btn-outline-primary me-1" title="Modifier">
                                         <i class="bi bi-pencil-square"></i>
                                     </a>
+                                    <!-- REMPLACEZ CECI -->
                                     <a href="{% url 'accounts:supprimer_etudiant' e.id %}"
-                                       class="btn btn-outline-danger me-1" title="Supprimer"
-                                       onclick="return confirm('Êtes-vous sûr de vouloir supprimer cet étudiant ?');">
+                                    class="btn btn-outline-danger me-1 btn-delete-student" 
+                                    title="Supprimer"
+                                    data-student-id="{{ e.id }}"
+                                    data-student-name="{{ e.user.get_full_name }}"
+                                    data-student-matricule="{{ e.matricule }}">
                                         <i class="bi bi-trash"></i>
-                                    </a> 
+                                    </a>
                                     <a href="{% url 'accounts:voir_profil_utilisateur' e.user.id %}"
                                     class="btn btn-outline-info btn-sm">
                                         <i class="bi bi-person-lines-fill"></i> Voir le profil
@@ -201,5 +205,75 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 </script>
 
-
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // SweetAlert pour la suppression des étudiants
+    document.querySelectorAll('.btn-delete-student').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            const studentName = this.getAttribute('data-student-name');
+            const studentMatricule = this.getAttribute('data-student-matricule');
+            const deleteUrl = this.getAttribute('href');
+            
+            Swal.fire({
+                title: 'Êtes-vous sûr ?',
+                html: `Vous allez supprimer :<br>
+                       <strong>${studentName}</strong><br>
+                       <small>Matricule: ${studentMatricule}</small>`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Oui, supprimer !',
+                cancelButtonText: 'Annuler',
+                reverseButtons: true,
+                showLoaderOnConfirm: true,
+                preConfirm: () => {
+                    // Si vous voulez faire une suppression AJAX :
+                    // return fetch(deleteUrl, {
+                    //     method: 'POST',
+                    //     headers: {
+                    //         'X-CSRFToken': getCookie('csrftoken'),
+                    //         'Content-Type': 'application/json'
+                    //     }
+                    // }).then(response => {
+                    //     if (!response.ok) {
+                    //         throw new Error('Erreur lors de la suppression');
+                    //     }
+                    //     return response.json();
+                    // });
+                    
+                    // Ou redirection simple :
+                    window.location.href = deleteUrl;
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Pour suppression AJAX uniquement :
+                    // Swal.fire('Supprimé!', 'L\'étudiant a été supprimé.', 'success')
+                    // .then(() => {
+                    //     window.location.reload();
+                    // });
+                }
+            });
+        });
+    });
+    
+    // Fonction pour récupérer le token CSRF (si suppression AJAX)
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+});
+</script>
 {% endblock %}

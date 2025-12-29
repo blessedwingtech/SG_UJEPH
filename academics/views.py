@@ -4,7 +4,11 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.urls import reverse
 
-from accounts.views import can_manage_academique, can_manage_cours, can_manage_facultes, can_manage_users, is_admin
+from accounts.views import (
+    can_manage_academique, can_manage_cours, can_manage_facultes, 
+    can_validate_grades, can_manage_users, is_admin, 
+    can_manage_annonces, can_access_academique, permission_required  # ✅ AJOUTER
+)
 from .models import Cours, Faculte  # ✅ SUPPRIMER Inscription
 from accounts.models import Admin, User
 from .forms import CoursForm, FaculteForm 
@@ -36,7 +40,7 @@ from accounts.audit_utils import (
  
 
 @login_required
-@user_passes_test(can_manage_academique)
+@permission_required(can_access_academique, redirect_url='accounts:dashboard')
 def creer_cours(request):
     if request.method == 'POST':
         form = CoursForm(request.POST)
@@ -61,7 +65,7 @@ def creer_cours(request):
 
 
 @login_required
-@user_passes_test(is_admin)
+@permission_required(can_access_academique, redirect_url='accounts:dashboard')
 def gestion_cours(request):
     cours_list = Cours.objects.all().order_by('faculte', 'niveau')
 
@@ -76,7 +80,7 @@ def gestion_cours(request):
     )
 
 @login_required
-@user_passes_test(is_admin)
+@permission_required(can_access_academique, redirect_url='accounts:dashboard')
 def recherche_cours_ajax(request):
     q = request.GET.get('q', '').strip()
 
@@ -139,6 +143,7 @@ def mes_cours_etudiant(request):
     return render(request, 'academics/mes_cours_etudiant.html', context)
 
 @login_required
+@permission_required(is_admin, redirect_url='accounts:dashboard')
 def liste_facultes(request):
     """Liste des facultés"""
     facultes = Faculte.objects.all()
@@ -149,6 +154,7 @@ from django.core.paginator import Paginator
 
 
 @login_required
+@permission_required(can_access_academique, redirect_url='accounts:dashboard')
 def liste_cours(request):
     """
     Liste des cours selon le rôle de l'utilisateur
@@ -282,7 +288,7 @@ def rechercher_cours_ajax(request):
 
 
 @login_required
-@user_passes_test(is_admin)
+@permission_required(can_access_academique, redirect_url='accounts:dashboard')
 def modifier_cours(request, cours_id):
     """Modifier un cours existant"""
     cours = get_object_or_404(Cours, id=cours_id)
@@ -317,7 +323,7 @@ def modifier_cours(request, cours_id):
     })
 
 @login_required
-@user_passes_test(is_admin)
+@permission_required(can_access_academique, redirect_url='accounts:dashboard')
 def supprimer_cours(request, cours_id):
     """Supprimer un cours"""
     cours = get_object_or_404(Cours, id=cours_id)
@@ -338,7 +344,7 @@ def supprimer_cours(request, cours_id):
 # ... vos vues existantes ...
 
 @login_required
-@user_passes_test(can_manage_facultes)
+@permission_required(can_access_academique, redirect_url='accounts:dashboard')
 def creer_faculte(request):
     if request.method == 'POST':
         form = FaculteForm(request.POST)
@@ -358,7 +364,7 @@ def creer_faculte(request):
 
 
 @login_required
-@user_passes_test(can_manage_facultes)
+@permission_required(can_access_academique, redirect_url='accounts:dashboard')
 def modifier_faculte(request, faculte_id):
     faculte = get_object_or_404(Faculte, id=faculte_id)
 
@@ -379,7 +385,7 @@ def modifier_faculte(request, faculte_id):
 
 
 @login_required
-@user_passes_test(can_manage_facultes)
+@permission_required(can_access_academique, redirect_url='accounts:dashboard')
 def supprimer_faculte(request, faculte_id):
     faculte = get_object_or_404(Faculte, id=faculte_id)
 
@@ -395,13 +401,13 @@ def supprimer_faculte(request, faculte_id):
     })
 
 
-@login_required
-@user_passes_test(can_manage_facultes)
-def liste_facultes(request):
-    facultes = Faculte.objects.all().order_by('nom')
-    return render(request, 'academics/liste_facultes.html', {
-        'facultes': facultes
-    })
+# @login_required
+# @user_passes_test(can_manage_facultes)
+# def liste_facultes(request):
+#     facultes = Faculte.objects.all().order_by('nom')
+#     return render(request, 'academics/liste_facultes.html', {
+#         'facultes': facultes
+#     })
 
 
 
@@ -485,7 +491,7 @@ def can_manage_annonces(user):
         return False
 
 @login_required
-@user_passes_test(can_manage_annonces)
+#@user_passes_test(can_manage_annonces)
 def liste_annonces(request):
     """Liste toutes les annonces avec filtres"""
     now = timezone.now()

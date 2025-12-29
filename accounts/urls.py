@@ -1,4 +1,6 @@
 from django.urls import path
+
+from accounts.permissions import django_superuser_required
 from . import views
 from django.contrib.auth import views as auth_views
 
@@ -59,7 +61,9 @@ urlpatterns = [
              template_name='accounts/password_reset.html',
              email_template_name='accounts/password_reset_email.html',
              subject_template_name='accounts/password_reset_subject.txt',
-             success_url='/comptes/password-reset/done/'), name='password_reset'),
+             success_url='/comptes/password-reset/done/'), name='password_reset'), 
+    path('systeme/admins/', django_superuser_required(views.liste_admins_systeme), name='liste_admins_systeme'),         
+    path('systeme/creer-admin/', django_superuser_required(views.creer_admin_systeme), name='creer_admin_systeme'),
     
     path('password-reset/done/', auth_views.PasswordResetDoneView.as_view(template_name='accounts/password_reset_done.html'), name='password_reset_done'),
     path('reset/<uidb64>/<token>/', auth_views.PasswordResetConfirmView.as_view(template_name='accounts/password_reset_confirm.html', success_url='/comptes/reset/done/'), name='password_reset_confirm'),

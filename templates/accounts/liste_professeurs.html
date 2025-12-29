@@ -66,9 +66,11 @@
                                    <i class="bi bi-pencil-square"></i>
                                 </a>
                                 <a href="{% url 'accounts:supprimer_professeur' prof.id %}" 
-                                   class="btn btn-sm btn-outline-danger me-1"
-                                   onclick="return confirm('Supprimer ce professeur ?');">
-                                   <i class="bi bi-trash"></i>
+                                class="btn btn-sm btn-outline-danger me-1 btn-delete-professor"
+                                data-professor-id="{{ prof.id }}"
+                                data-professor-name="{{ prof.user.get_full_name }}"
+                                data-professor-specialite="{{ prof.specialite }}">
+                                <i class="bi bi-trash"></i>
                                 </a>
                                 <a href="{% url 'accounts:voir_profil_utilisateur' prof.user.id %}"
                                 class="btn btn-outline-info btn-sm1">
@@ -204,5 +206,27 @@ document.addEventListener('DOMContentLoaded', function () {
 
 });
 </script>
-
+<script>
+// Juste pour les boutons existants
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.btn-delete-professor').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const professorName = this.getAttribute('data-professor-name');
+            Swal.fire({
+                title: 'Supprimer ce professeur ?',
+                text: `Êtes-vous sûr de vouloir supprimer ${professorName} ?`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Oui, supprimer',
+                cancelButtonText: 'Annuler'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = this.getAttribute('href');
+                }
+            }.bind(this));
+        });
+    });
+});
+</script>
 {% endblock %}

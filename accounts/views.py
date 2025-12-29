@@ -3,6 +3,8 @@ from django.contrib import messages
 from django.db import IntegrityError
 from django.shortcuts import get_object_or_404, render, redirect
 from django.contrib.auth.decorators import login_required, user_passes_test
+
+from accounts.permissions import django_superuser_required
 from .forms import AdminCreationForm, UserEditForm, UserForm, EtudiantForm, ProfesseurForm
 from .models import LoginAttempt, User, Etudiant, Professeur, Admin, get_annee_academique  # ✅ Admin importé
 from django.core.paginator import Paginator   
@@ -60,10 +62,11 @@ def is_admin(user):
         user.role == User.Role.ADMIN and
         hasattr(user, 'admin')
     )
-
+# === FONCTIONS DE VÉRIFICATION DE PERMISSIONS ===
 
 # === FONCTIONS DE VÉRIFICATION DE PERMISSIONS ===
 
+# ⚠️ CRITIQUE - CETTE FONCTION DOIT EXISTER
 def is_admin(user):
     """Vérifie si l'utilisateur est un admin du système"""
     return (
@@ -81,50 +84,141 @@ def is_super_admin(user):
 def can_manage_users(user):
     """
     Vérifie si l'admin peut gérer les utilisateurs (étudiants, professeurs)
-    Autoriser: Super Admin, Gestionnaire Utilisateurs
-    Refuser: Admin Académique
     """
     if not is_admin(user):
         return False
     if is_super_admin(user):
-        return True  # Super admin peut tout
+        return True
     return user.admin.peut_gerer_utilisateurs
 
+# ✅ MODIFIÉ : MAINTENANT INCLUT COURS + FACULTÉS + NOTES
+# accounts/views.py - MODIFIEZ CES FONCTIONS
+
+# 1. can_manage_academique reste TRÈS RESTRICTIVE (les 3 permissions)
 def can_manage_academique(user):
     """
-    Vérifie si l'admin peut gérer les aspects académiques
-    Autoriser: Super Admin, Admin Académique
-    Refuser: Gestionnaire Utilisateurs
+    Vérifie si l'admin peut gérer TOUT ce qui est académique
+    (cours + facultés + validation notes)
+    Très restrictive - nécessite les 3 permissions
     """
     if not is_admin(user):
         return False
     if is_super_admin(user):
-        return True  # Super admin peut tout
-    return user.admin.peut_gerer_cours and user.admin.peut_gerer_facultes
+        return True
+    return (
+        user.admin.peut_gerer_cours and 
+        user.admin.peut_gerer_facultes and 
+        user.admin.peut_valider_notes
+    )
+
+# 2. can_manage_cours devient PLUS PERMISSIVE
+def can_manage_cours(user):
+    """
+    Vérifie si l'admin peut gérer les cours
+    Soit il a la permission spécifique, soit il a can_manage_academique
+    """
+    if not is_admin(user):
+        return False
+    if is_super_admin(user):
+        return True
+    return user.admin.peut_gerer_cours or can_manage_academique(user)  # ✅ MODIFIÉ
+
+# 3. Faites de même pour les autres permissions académiques
+def can_manage_facultes(user):
+    """Vérifie si l'admin peut gérer les facultés"""
+    if not is_admin(user):
+        return False
+    if is_super_admin(user):
+        return True
+    return user.admin.peut_gerer_facultes or can_manage_academique(user)  # ✅ MODIFIÉ
 
 def can_validate_grades(user):
     """Vérifie si l'admin peut valider des notes"""
     if not is_admin(user):
         return False
     if is_super_admin(user):
-        return True  # Super admin peut tout
-    return user.admin.peut_valider_notes
+        return True
+    return user.admin.peut_valider_notes or can_manage_academique(user)  # ✅ MODIFIÉ
 
-def can_manage_cours(user):
-    """Vérifie si l'admin peut gérer les cours"""
+# 4. can_access_academique reste logique OU
+def can_access_academique(user):
+    """
+    Vérifie si l'admin peut accéder à l'interface académique
+    (au moins une permission académique spécifique OU can_manage_academique)
+    """
     if not is_admin(user):
         return False
     if is_super_admin(user):
-        return True  # Super admin peut tout
-    return user.admin.peut_gerer_cours
+        return True
+    
+    # Soit une permission spécifique, soit la permission globale
+    return (
+        user.admin.peut_gerer_cours or 
+        user.admin.peut_gerer_facultes or 
+        user.admin.peut_valider_notes or
+        can_manage_academique(user)  # ✅ AJOUTÉ
+    )
 
-def can_manage_facultes(user):
-    """Vérifie si l'admin peut gérer les facultés"""
+def permission_required(test_func, message=None, redirect_url='accounts:dashboard'):
+    """
+    Messages simplifiés - un par type de permission
+    """
+    def decorator(view_func):
+        def wrapper(request, *args, **kwargs):
+            if test_func(request.user):
+                return view_func(request, *args, **kwargs)
+            
+            # Messages TRÈS SIMPLES comme vous voulez
+            if message is None:
+                func_name = test_func.__name__
+                
+                if func_name == 'can_manage_academique':
+                    error_msg = "🎓 Vous n'avez pas accès à la gestion académique"
+                elif func_name == 'can_manage_cours':
+                    error_msg = "🎓 Vous n'avez pas accès à la gestion académique"
+                elif func_name == 'can_manage_facultes':
+                    error_msg = "🎓 Vous n'avez pas accès à la gestion académique"
+                elif func_name == 'can_validate_grades':
+                    error_msg = "🎓 Vous n'avez pas accès à la gestion académique"
+                elif func_name == 'can_access_academique':
+                    error_msg = "🎓 Vous n'avez pas accès à la gestion académique"
+                    
+                elif func_name == 'can_manage_users':
+                    error_msg = "👥 Vous n'avez pas accès à la gestion des utilisateurs"
+                elif func_name == 'can_manage_annonces':
+                    error_msg = "👥 Vous n'avez pas accès à la gestion des utilisateurs"
+                    
+                elif func_name == 'is_admin':
+                    error_msg = "👔 Accès réservé aux administrateurs"
+                elif func_name == 'is_super_admin':
+                    error_msg = "👑 Accès réservé aux super administrateurs"
+                    
+                else:
+                    error_msg = "🔒 Accès non autorisé"
+            else:
+                error_msg = message
+            
+            messages.error(request, error_msg)
+            return redirect(redirect_url)
+        
+        return wrapper
+    return decorator
+
+
+# ✅ AJOUTÉ : Gestion des annonces
+def can_manage_annonces(user):
+    """
+    Vérifie si l'admin peut gérer les annonces
+    Par défaut : tous les admins académiques peuvent gérer les annonces
+    """
     if not is_admin(user):
         return False
     if is_super_admin(user):
-        return True  # Super admin peut tout
-    return user.admin.peut_gerer_facultes
+        return True
+    # Option 1: Tous les admins académiques peuvent gérer les annonces
+    return can_manage_academique(user) or user.admin.peut_gerer_utilisateurs
+    # Option 2: Tous les admins
+    # return True
 
 # 3. PERMISSION SPÉCIALE : CRÉER DES ADMINS
 def can_manage_admins(user):
@@ -134,10 +228,8 @@ def can_manage_admins(user):
     """
     if not is_admin(user):
         return False
-    # SEULEMENT les Super Admins peuvent créer des admins
     return user.admin.niveau_acces == 'super'
 
- 
 
 # Ajoutez cette fonction dans academics/views.py
 def get_annonces_accueil(request):
@@ -1086,7 +1178,7 @@ def logout_confirm(request):
 
 
 @login_required
-@user_passes_test(can_manage_admins)
+@permission_required(can_manage_admins, redirect_url='accounts:dashboard')
 def creer_admin(request):
     """
     Vue optimisée pour la création d'un administrateur.
@@ -1229,7 +1321,7 @@ def creer_admin(request):
 
 
 @login_required
-@user_passes_test(can_manage_admins)
+@permission_required(can_manage_admins, redirect_url='accounts:dashboard')
 def liste_admins(request):
     """Affiche la liste des administrateurs"""
     admins = Admin.objects.select_related('user').all().order_by('-date_nomination')
@@ -1242,12 +1334,96 @@ def liste_admins(request):
     return render(request, 'accounts/liste_admins.html', context)
 
  
-
+# accounts/views.py
+@login_required
+@django_superuser_required  # <-- NOUVEAU décorateur
+def creer_admin_systeme(request):
+    """
+    Vue accessible UNIQUEMENT au superuser Django
+    Permet de créer un administrateur avec niveau d'accès
+    """
+    form = AdminCreationForm(request.POST or None)
+    
+    if request.method == 'POST':
+        if form.is_valid():
+            try:
+                with transaction.atomic():
+                    # 🔇 Désactiver temporairement le signal
+                    post_save.disconnect(create_user_profile, sender=User)
+                    
+                    # Créer l'utilisateur
+                    user = form.save(commit=False)
+                    user.role = User.Role.ADMIN  # Rôle ADMIN
+                    user.first_login = True
+                    user.set_password("1234")  # Mot de passe par défaut
+                    user.save()
+                    
+                    # Créer le profil Admin
+                    niveau_acces = form.cleaned_data['niveau_acces']
+                    
+                    # Définir les permissions selon le niveau
+                    permissions = {
+                        'niveau_acces': niveau_acces,
+                        'peut_gerer_utilisateurs': True,
+                        'peut_gerer_cours': True,
+                        'peut_valider_notes': True,
+                        'peut_gerer_facultes': True,
+                    }
+                    
+                    # Ajuster selon le niveau
+                    if niveau_acces == 'academique':
+                        permissions['peut_gerer_utilisateurs'] = False
+                    elif niveau_acces == 'utilisateurs':
+                        permissions.update({
+                            'peut_gerer_cours': False,
+                            'peut_valider_notes': False,
+                            'peut_gerer_facultes': False,
+                        })
+                    
+                    admin = Admin.objects.create(
+                        user=user,
+                        **permissions
+                    )
+                    
+                    # 🔊 Réactiver le signal
+                    post_save.connect(create_user_profile, sender=User)
+                
+                # ✅ Succès
+                messages.success(request, 
+                    f"✅ Administrateur {user.get_full_name()} créé avec succès!<br>"
+                    f"<strong>Nom d'utilisateur:</strong> {user.username}<br>"
+                    f"<strong>Mot de passe temporaire:</strong> 1234"
+                )
+                
+                # Audit
+                audit_creer_admin(request, admin)
+                
+                return redirect('accounts:liste_admins_systeme')
+                
+            except Exception as e:
+                post_save.connect(create_user_profile, sender=User)
+                messages.error(request, f"❌ Erreur: {str(e)}")
+    
+    return render(request, 'accounts/creer_admin_systeme.html', {
+        'form': form,
+        'is_django_superuser': True
+    }) 
  
+# accounts/views.py
+@login_required
+@django_superuser_required
+def liste_admins_systeme(request):
+    """Liste de tous les administrateurs (superuser seulement)"""
+    admins = Admin.objects.select_related('user').all().order_by('-date_nomination')
+    
+    return render(request, 'accounts/liste_admins_systeme.html', {
+        'admins': admins,
+        'is_django_superuser': True
+    }) 
  
 
 @login_required
-@user_passes_test(can_manage_users)
+@permission_required(can_manage_users, redirect_url='accounts:dashboard')
 def creer_etudiant(request):
     # DÉSACTIVER le signal au tout début
     post_save.disconnect(create_user_profile, sender=User)
@@ -1414,7 +1590,7 @@ def creer_etudiant(request):
 
 
 @login_required
-@user_passes_test(can_manage_users)
+@permission_required(can_manage_users, redirect_url='accounts:dashboard')
 def creer_professeur(request):
     """
     Vue optimisée pour la création d'un professeur.
@@ -1611,8 +1787,10 @@ def creer_professeur(request):
 @login_required
 def dashboard(request):
     user = request.user
+
+    is_django_superuser = user.is_superuser
     
-    if user.role == User.Role.ADMIN:
+    if user.role == User.Role.ADMIN or is_django_superuser:
         from academics.models import Faculte, Cours
         from grades.models import Note
         from django.utils import timezone
@@ -1679,6 +1857,7 @@ def dashboard(request):
             'comptes_desactives': comptes_desactives,
             'total_utilisateurs': total_utilisateurs,
             'pourcentage_actif': round(pourcentage_actif, 1),
+            'is_django_superuser': is_django_superuser,
         }
     
     elif user.role == User.Role.PROFESSEUR:
@@ -1747,7 +1926,7 @@ def dashboard(request):
 
 # ✅ CORRECTION : UTILISER LES PERMISSIONS GRANULAIRES
 @login_required
-@user_passes_test(can_manage_users)  # ✅ Au lieu de is_admin
+@permission_required(is_admin)  # ✅ Au lieu de is_admin
 def liste_etudiants(request):
     search = request.GET.get('search', '')
     etudiants_list = Etudiant.objects.select_related('user', 'faculte').order_by('faculte', 'niveau', 'user__last_name')
@@ -1765,7 +1944,7 @@ def liste_etudiants(request):
 
 
 @login_required
-@user_passes_test(can_manage_users)
+@user_passes_test(is_admin)
 def rechercher_etudiants_ajax(request):
     search = request.GET.get('q', '')
 
@@ -1794,7 +1973,7 @@ def rechercher_etudiants_ajax(request):
 
 # ✅ CORRECTION : UTILISER LES PERMISSIONS GRANULAIRES  
 @login_required
-@user_passes_test(can_manage_users)  # ✅ Au lieu de is_admin
+@permission_required(is_admin)  # ✅ Au lieu de is_admin
 def liste_professeurs(request):
     search = request.GET.get('search', '')
     prof_list = Professeur.objects.select_related('user').order_by('user__last_name')
@@ -1811,7 +1990,7 @@ def liste_professeurs(request):
  
 
 @login_required
-@user_passes_test(can_manage_users)
+@user_passes_test(is_admin)
 def rechercher_professeurs_ajax(request):
     search = request.GET.get('q', '')
 
@@ -1840,7 +2019,7 @@ def rechercher_professeurs_ajax(request):
 # === VUES DE MODIFICATION ===
 
 @login_required
-@user_passes_test(can_manage_users)
+@permission_required(can_manage_users, redirect_url='accounts:dashboard')
 def modifier_etudiant(request, etudiant_id):
     """Modifier un étudiant existant"""
     etudiant = get_object_or_404(Etudiant, id=etudiant_id)
@@ -1888,7 +2067,7 @@ def modifier_etudiant(request, etudiant_id):
 
 
 @login_required
-@user_passes_test(can_manage_users)
+@permission_required(can_manage_users, redirect_url='accounts:dashboard')
 def modifier_professeur(request, professeur_id):
     """Modifier un professeur existant"""
     professeur = get_object_or_404(Professeur, id=professeur_id)
@@ -1913,7 +2092,7 @@ def modifier_professeur(request, professeur_id):
     })
 
 @login_required
-@user_passes_test(can_manage_users)
+@permission_required(can_manage_users, redirect_url='accounts:dashboard')
 def supprimer_etudiant(request, etudiant_id):
     """Supprimer un étudiant"""
     etudiant = get_object_or_404(Etudiant, id=etudiant_id)
@@ -1932,7 +2111,7 @@ def supprimer_etudiant(request, etudiant_id):
     })
 
 @login_required
-@user_passes_test(can_manage_users)
+@permission_required(can_manage_users, redirect_url='accounts:dashboard')
 def supprimer_professeur(request, professeur_id):
     """Supprimer un professeur"""
     professeur = get_object_or_404(Professeur, id=professeur_id)
@@ -1956,7 +2135,7 @@ def supprimer_professeur(request, professeur_id):
 
  
 @login_required
-@user_passes_test(can_manage_users)
+@permission_required(can_manage_users, redirect_url='accounts:dashboard')
 def export_professeurs_csv(request):
     search = request.GET.get('q', '').strip()
     # ✅ AUDIT: Export avant génération
@@ -1997,7 +2176,7 @@ def export_professeurs_csv(request):
 
 
 @login_required
-@user_passes_test(can_manage_users)
+@permission_required(can_manage_users, redirect_url='accounts:dashboard')
 def export_etudiants_csv(request):
     search = request.GET.get('q', '').strip()
     # ✅ AUDIT: Export avant génération
@@ -2052,7 +2231,8 @@ def admin_required(view_func):
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
 @login_required
-@admin_required
+#@admin_required
+@permission_required(can_manage_users, redirect_url='accounts:dashboard')
 def gestion_utilisateurs(request):
     """
     Admin: Liste et gestion de tous les utilisateurs avec pagination
@@ -2188,7 +2368,8 @@ def detail_utilisateur(request, user_id):
     return render(request, 'accounts/detail_utilisateur.html', context)
 
 @login_required
-@admin_required
+#@admin_required
+@permission_required(can_manage_users, redirect_url='accounts:dashboard')
 def toggle_activation(request, user_id):
     """
     Admin: Activer/désactiver un compte utilisateur
@@ -2213,7 +2394,7 @@ def toggle_activation(request, user_id):
 
 
 @login_required
-@admin_required
+@permission_required(can_manage_users, redirect_url='accounts:dashboard')
 def changer_role(request, user_id):
     """
     Admin: Changer le rôle d'un utilisateur
@@ -2385,6 +2566,7 @@ from datetime import datetime, date
 from django.shortcuts import render
 from .models import AuditAction
 
+@user_passes_test(is_admin)
 def vue_audit(request):
     """Vue pour consulter les actions d'audit avec filtres CORRIGÉE"""
     

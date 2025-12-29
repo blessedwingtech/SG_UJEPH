@@ -3,7 +3,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.db.models import Avg, Max
 
-from accounts.views import is_admin
+from accounts.views import can_access_academique, can_manage_academique, is_admin, permission_required
 from grades.utils import STATUT_BROUILLON, STATUT_PUBLIEE, STATUT_REJETEE, STATUT_SOUMISE, STATUTS_MODIFIABLES, calculer_et_stocker_moyennes, reattribuer_cours_etudiant
 from .models import HistoriquePromotion, Note, MoyenneSemestre
 from academics.models import Cours, Faculte
@@ -671,7 +671,8 @@ def saisie_notes(request, cours_id):
 
 
 @login_required
-@user_passes_test(is_admin)
+#@permission_required(can_access_academique, redirect_url='accounts:dashboard')
+@permission_required(is_admin)
 def validation_notes(request):
     """
     Admin: Liste des cours avec notes soumises
@@ -703,7 +704,7 @@ def validation_notes(request):
     return render(request, 'grades/validation_notes.html', context)
 
 @login_required
-@user_passes_test(is_admin)
+@permission_required(can_access_academique, redirect_url='accounts:dashboard')
 def traiter_cours_notes(request, cours_id):
     """
     Admin: Traiter toutes les notes d'un cours (version améliorée)
@@ -1001,7 +1002,7 @@ def consulter_notes_etudiant(request):
 # grades/views.py
 
 @login_required
-@user_passes_test(is_admin)
+@permission_required(can_access_academique, redirect_url='accounts:dashboard')
 def gestion_notes_publiees(request):
     """
     Admin: Liste des cours avec notes PUBLIÉES (pour remise en brouillon)
@@ -1034,7 +1035,7 @@ def gestion_notes_publiees(request):
 
 
 @login_required
-@user_passes_test(is_admin)
+@user_passes_test(can_manage_academique)
 def remettre_notes_brouillon(request, cours_id):
     """
     Admin: Remettre toutes les notes publiées d'un cours en brouillon
@@ -1148,7 +1149,7 @@ def remettre_notes_brouillon(request, cours_id):
 
 # grades/views.py - VUE COMPLÈTE
 @login_required
-@user_passes_test(is_admin)
+@permission_required(can_access_academique, redirect_url='accounts:dashboard')
 def gestion_semestres(request):
     """
     Admin: Gestion des changements de semestres et promotions - UJEPH VERSION

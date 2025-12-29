@@ -583,32 +583,46 @@ def login_view(request):
             'password': {'value': ''}
         }
     })
-
-# accounts/views.py - AJOUTER CETTE VUE SEULEMENT
-from django.http import JsonResponse
-from django.views.decorators.http import require_POST
-from django.views.decorators.csrf import csrf_exempt
-
-# accounts/views.py - MODIFIEZ cette vue
+ 
+ 
 @require_POST
-@csrf_exempt
 def update_activity(request):
-    """Mettre à jour l'activité quand l'utilisateur interagit (appelé via AJAX)"""
+    """
+    SEULE vue autorisée à mettre à jour last_activity
+    Appelée uniquement via AJAX
+    """
     if request.user.is_authenticated:
-        # 🔴 NE PAS mettre à jour last_activity ici !
-        # Le middleware le fait déjà pour les vraies requêtes
+        request.session['last_activity'] = timezone.now().isoformat()
+        return JsonResponse({'success': True})
+
+    return JsonResponse({'success': False}, status=401)
+
+# accounts/views.py - AJOUTER
+from django.http import JsonResponse
+from django.views.decorators.http import require_GET
+
+@require_GET
+def debug_session(request):
+    """Vue de debug pour vérifier l'état de la session"""
+    if request.user.is_authenticated:
+        data = {
+            'authenticated': True,
+            'session_data': dict(request.session),
+            'show_warning': request.session.get('show_warning', False),
+            'warning_time': request.session.get('warning_time', 0),
+            'remaining_time': request.session.get('remaining_time', 300),
+            'last_activity': request.session.get('last_activity'),
+        }
         
-        # Juste supprimer l'avertissement si présent
-        if 'auto_logout_warning' in request.session:
-            del request.session['auto_logout_warning']
-            del request.session['auto_logout_warning_time']
+        response = JsonResponse(data)
         
-        return JsonResponse({
-            'success': True, 
-            'message': 'Activité mise à jour',
-            'warning_cleared': True
-        })
-    return JsonResponse({'success': False, 'message': 'Non authentifié'}, status=401)
+        # Ajouter les headers pour le JavaScript
+        response['X-Session-Remaining'] = str(request.session.get('remaining_time', 300))
+        response['X-Session-Warning'] = 'true' if request.session.get('show_warning') else 'false'
+        
+        return response
+    
+    return JsonResponse({'authenticated': False}, status=401)
 
 # def login_view(request):
 #     """Vue de connexion avec validation en temps réel et protection contre les attaques"""

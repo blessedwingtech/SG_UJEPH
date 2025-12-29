@@ -782,315 +782,267 @@
     {% block extra_scripts %}{% endblock %}
  
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <!-- Dans base.html, APRÈS le footer, AVANT les scripts -->
+
+<audio id="session-warning-sound" preload="auto">
+    <source src="{% static 'sounds/warning.mp3' %}" type="audio/mpeg">
+</audio>
+ 
 {% if user.is_authenticated %}
-<!-- 🔹 DONNÉES POUR L'AUTO-LOGOUT (dans le HTML, pas dans JS) -->
-<div id="autoLogoutData" 
-     data-warning="{% if auto_logout_warning %}true{% else %}false{% endif %}"
-     data-warning-time="{{ auto_logout_warning_time|default:0 }}"
-     data-login-url="{% url 'accounts:login' %}"
-     data-update-url="{% url 'accounts:update_activity' %}"
-     data-csrf-token="{{ csrf_token }}"
-     style="display: none;">
-</div>
-{% endif %}
-<!-- 🔹 SCRIPT AUTO-LOGOUT 100% PUR -->
 <script>
-    // ============================================
-// AUTO-LOGOUT WARNING SYSTEM - VERSION CORRIGÉE
-// ============================================
+class AdvancedSessionMonitor {
 
-document.addEventListener('DOMContentLoaded', function() {
-    console.log("Auto-logout system loading...");
-    
-    // 1. Récupérer les données depuis l'élément HTML
-    const dataElement = document.getElementById('autoLogoutData');
-    
-    if (!dataElement) {
-        console.log("User not authenticated or no auto-logout data");
-        return;
-    }
-    
-    // Extraire les données
-    const hasWarning = dataElement.dataset.warning === 'true';
-    const warningTime = parseInt(dataElement.dataset.warningTime) || 0;
-    const loginUrl = dataElement.dataset.loginUrl;
-    const updateUrl = dataElement.dataset.updateUrl;
-    const csrfToken = dataElement.dataset.csrfToken;
-    
-    console.log("Auto-logout data:", {
-        hasWarning: hasWarning,
-        warningTime: warningTime,
-        loginUrl: loginUrl,
-        updateUrl: updateUrl,
-        csrfToken: csrfToken ? "Present" : "Missing"
-    });
-    
-    // 2. VÉRIFIER SI TIMEOUT ATTEINT (warningTime = 0)
-    if (hasWarning && warningTime === 0) {
-        console.log("🚨 TIMEOUT REACHED - Handling immediate logout");
-        handleAutoLogoutWhenTimeout();
-        return; // Ne pas continuer, déconnexion en cours
-    }
-    
-    // 3. Si avertissement actif avec temps restant, l'afficher
-    if (hasWarning && warningTime > 0) {
-        console.log("🚨 Displaying auto-logout warning:", warningTime, "seconds remaining");
-        showAutoLogoutWarning(warningTime, loginUrl, updateUrl, csrfToken);
-    }
-    
-    // 4. Détection d'activité pour tous les utilisateurs connectés
-    setupActivityDetection(updateUrl, csrfToken);
-});
+    constructor() {
+        this.loginUrl = "{% url 'accounts:login' %}";
+        this.activityUrl = "{% url 'accounts:update_activity' %}";
 
-// ============================================
-// FONCTIONS
-// ============================================
+        this.warningShown = false;
+        this.remainingSeconds = 0;
 
-// Fonction pour gérer le timeout immédiat
-function handleAutoLogoutWhenTimeout() {
-    const dataElement = document.getElementById('autoLogoutData');
-    if (!dataElement) return false;
-    
-    const warningTime = parseInt(dataElement.dataset.warningTime) || 0;
-    const loginUrl = dataElement.dataset.loginUrl;
-    
-    // Si warning_time = 0, déconnecter immédiatement
-    if (warningTime === 0) {
-        console.log("🚨 AUTO-LOGOUT: Timeout reached, redirecting to login");
-        
-        // Vérifier si SweetAlert2 est disponible
-        if (typeof Swal !== 'undefined') {
-            // Afficher un dernier avertissement avant redirection
-            Swal.fire({
-                icon: 'warning',
-                title: 'Session expirée',
-                text: 'Vous avez été déconnecté automatiquement après 5 minutes d\'inactivité.',
-                timer: 3000,
-                timerProgressBar: true,
-                showConfirmButton: false,
-                allowOutsideClick: false,
-                allowEscapeKey: false
-            }).then(() => {
-                window.location.href = loginUrl;
-            });
-            
-            // Redirection de sécurité après 5 secondes max
-            setTimeout(() => {
-                window.location.href = loginUrl;
-            }, 5000);
-        } else {
-            // Fallback sans SweetAlert2
-            alert('Session expirée. Vous allez être redirigé vers la page de connexion.');
-            setTimeout(() => {
-                window.location.href = loginUrl;
-            }, 2000);
-        }
-        
-        return true;
-    }
-    
-    return false;
-}
+        this.countdownInterval = null;
+        this.pollingInterval = null;
 
-function showAutoLogoutWarning(remainingTime, loginUrl, updateUrl, csrfToken) {
-    // Vérifier si timeout déjà atteint (sécurité)
-    if (handleAutoLogoutWhenTimeout()) {
-        return;
+        this.sessionExpired = false;
+        this.lastActivityPing = 0;
+
+        this.sound = document.getElementById('session-warning-sound');
+
+        this.init();
     }
-    
-    let remaining = remainingTime;
-    let countdownInterval;
-    
-    // Créer l'avertissement
-    const warningDiv = document.createElement('div');
-    warningDiv.id = 'autoLogoutWarning';
-    warningDiv.className = 'alert alert-warning alert-dismissible fade show position-fixed';
-    warningDiv.style.cssText = `
-        top: 20px;
-        right: 20px;
-        z-index: 9999;
-        max-width: 400px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        border-left: 5px solid #ffc107;
-        animation: slideInRight 0.3s ease-out;
-    `;
-    
-    warningDiv.innerHTML = `
-        <div class="d-flex align-items-center">
-            <i class="bi bi-hourglass-split fs-4 me-3 text-warning"></i>
-            <div class="flex-grow-1">
-                <h6 class="mb-1 fw-bold">⚠ Déconnexion imminente</h6>
-                <p class="mb-1">Vous serez déconnecté dans <span id="logoutCountdown">${remaining}</span> seconde(s) pour inactivité.</p>
-                <div class="progress mt-2" style="height: 6px;">
-                    <div id="logoutProgressBar" class="progress-bar bg-warning progress-bar-striped progress-bar-animated" 
-                         role="progressbar" style="width: ${(remaining/60)*100}%"></div>
-                </div>
-                <p class="small mb-0 mt-1"><i class="bi bi-lightbulb me-1"></i> Interagissez avec la page pour rester connecté</p>
-            </div>
-            <button type="button" class="btn-close" id="closeWarningBtn"></button>
-        </div>
-    `;
-    
-    document.body.appendChild(warningDiv);
-    
-    // Compte à rebours
-    countdownInterval = setInterval(() => {
-        remaining--;
-        
-        if (remaining <= 0) {
-            clearInterval(countdownInterval);
-            warningDiv.remove();
-            
-            // Utiliser la fonction de timeout
-            handleAutoLogoutWhenTimeout();
-            return;
-        }
-        
-        // Mettre à jour l'affichage
-        const countdownElement = document.getElementById('logoutCountdown');
-        const progressBar = document.getElementById('logoutProgressBar');
-        
-        if (countdownElement) {
-            countdownElement.textContent = remaining;
-        }
-        
-        if (progressBar) {
-            const progressPercent = (remaining/60)*100;
-            progressBar.style.width = `${progressPercent}%`;
-            
-            // Changer la couleur
-            if (remaining <= 10) {
-                progressBar.className = 'progress-bar bg-danger progress-bar-striped progress-bar-animated';
-                warningDiv.className = 'alert alert-danger alert-dismissible fade show position-fixed';
-                warningDiv.style.borderLeft = '5px solid #dc3545';
-            } else if (remaining <= 30) {
-                progressBar.className = 'progress-bar bg-warning progress-bar-striped progress-bar-animated';
-            }
-        }
-    }, 1000);
-    
-    // Bouton fermer
-    document.getElementById('closeWarningBtn').addEventListener('click', function() {
-        clearInterval(countdownInterval);
-        warningDiv.remove();
-        console.log("Warning closed by user");
-        sendActivityUpdate(updateUrl, csrfToken);
-    });
-    
-    // Quand l'avertissement est supprimé (par activité), envoyer une requête
-    const observer = new MutationObserver(function(mutations) {
-        mutations.forEach(function(mutation) {
-            if (!document.getElementById('autoLogoutWarning')) {
-                sendActivityUpdate(updateUrl, csrfToken);
-                observer.disconnect();
-            }
+
+    /* ================= INIT ================= */
+
+    init() {
+        this.startHeaderPolling();
+        this.bindUserActivity();
+    }
+
+    /* ========== SERVER SESSION CHECK ========= */
+
+    startHeaderPolling() {
+        this.pollingInterval = setInterval(() => {
+
+            if (this.sessionExpired) return;
+
+            fetch(window.location.pathname, {
+                method: 'HEAD',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(response => {
+
+                if (response.status === 401) {
+                    this.forceLogout();
+                    return;
+                }
+
+                const remaining = parseInt(
+                    response.headers.get('X-Session-Remaining')
+                );
+
+                const warning = response.headers.get('X-Session-Warning');
+
+                if (
+                    warning === 'true' &&
+                    !this.warningShown &&
+                    remaining > 0
+                ) {
+                    this.startWarning(remaining);
+                }
+
+            })
+            .catch(() => {});
+
+        }, 5000);
+    }
+
+    /* ========== WARNING MODAL ========= */
+
+    startWarning(seconds) {
+
+        if (this.sessionExpired) return;
+
+        this.warningShown = true;
+        this.remainingSeconds = Math.max(seconds, 1);
+
+        this.startCountdown();
+        this.playSound();
+
+        Swal.fire({
+            title: '⚠️ Déconnexion automatique',
+            html: `
+                <p class="mb-2">
+                    Votre session expirera dans
+                    <strong style="font-size:1.8rem;color:#dc3545">
+                        <span id="session-countdown">${this.remainingSeconds}</span>
+                    </strong>
+                    seconde(s).
+                </p>
+                <p class="text-muted">
+                    Cliquez ou bougez la souris pour rester connecté.
+                </p>
+            `,
+            icon: 'warning',
+            allowOutsideClick: true,
+            allowEscapeKey: false,
+            confirmButtonText: 'Rester connecté',
+            confirmButtonColor: '#198754',
+            backdrop: true
+        }).then(() => {
+            this.resetSession();
         });
-    });
-    
-    observer.observe(document.body, { childList: true, subtree: true });
-}
-
-function setupActivityDetection(updateUrl, csrfToken) {
-    if (!updateUrl || !csrfToken) {
-        console.log("Activity detection disabled: missing URL or CSRF token");
-        return;
     }
-    
-    let lastActivityTime = Date.now();
-    let activityDebounceTimer;
-    
-    function updateUserActivity() {
-        const now = Date.now();
-        
-        // Éviter trop de requêtes
-        if (now - lastActivityTime < 2000) {
-            return;
+
+    /* ========== COUNTDOWN ========= */
+
+    startCountdown() {
+
+        if (this.countdownInterval) {
+            clearInterval(this.countdownInterval);
         }
-        
-        lastActivityTime = now;
-        
-        clearTimeout(activityDebounceTimer);
-        
-        activityDebounceTimer = setTimeout(() => {
-            // Supprimer l'avertissement s'il existe
-            const warningDiv = document.getElementById('autoLogoutWarning');
-            if (warningDiv) {
-                warningDiv.remove();
-                console.log("Warning removed due to user activity");
+
+        this.countdownInterval = setInterval(() => {
+
+            if (this.sessionExpired) {
+                clearInterval(this.countdownInterval);
+                return;
             }
-            
-            // Envoyer la requête
-            sendActivityUpdate(updateUrl, csrfToken);
-        }, 500);
+
+            this.remainingSeconds--;
+
+            const span = document.getElementById('session-countdown');
+            if (span) span.textContent = this.remainingSeconds;
+
+            if (this.remainingSeconds <= 0) {
+                this.forceLogout();
+            }
+
+        }, 1000);
     }
-    
-    // Événements à surveiller
-    const events = [
-        'mousedown', 'mouseup', 'mousemove', 'click', 'dblclick',
-        'keydown', 'keyup', 'keypress',
-        'touchstart', 'touchend', 'touchmove',
-        'scroll', 'focus', 'blur', 'change', 'input', 'submit'
-    ];
-    
-    events.forEach(eventName => {
-        document.addEventListener(eventName, updateUserActivity, { passive: true });
-    });
-    
-    console.log("Activity detection setup complete");
+
+    /* ========== RESET SESSION ========= */
+
+    resetSession() {
+
+        if (this.sessionExpired) return;
+
+        this.stopWarning();
+
+        fetch(this.activityUrl, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': this.getCSRFToken(),
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(() => this.syncWithServer())
+        .catch(() => {});
+    }
+
+    syncWithServer() {
+
+        if (this.sessionExpired) return;
+
+        fetch(window.location.pathname, {
+            method: 'HEAD',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(response => {
+
+            const remaining = parseInt(
+                response.headers.get('X-Session-Remaining')
+            );
+
+            if (!isNaN(remaining)) {
+                this.remainingSeconds = remaining;
+            }
+        })
+        .catch(() => {});
+    }
+
+    /* ========== STOP WARNING ========= */
+
+    stopWarning() {
+
+        this.warningShown = false;
+
+        if (this.countdownInterval) {
+            clearInterval(this.countdownInterval);
+            this.countdownInterval = null;
+        }
+
+        this.stopSound();
+        Swal.close();
+    }
+
+    /* ========== USER ACTIVITY ========= */
+
+    bindUserActivity() {
+        ['click', 'mousemove', 'keydown', 'scroll'].forEach(evt => {
+            document.addEventListener(evt, () => {
+                this.throttledActivity();
+            });
+        });
+    }
+
+    throttledActivity() {
+
+        if (this.sessionExpired) return;
+
+        const now = Date.now();
+        if (now - this.lastActivityPing < 5000) return;
+
+        this.lastActivityPing = now;
+        this.resetSession();
+    }
+
+    /* ========== FORCE LOGOUT ========= */
+
+    forceLogout() {
+
+        if (this.sessionExpired) return;
+
+        this.sessionExpired = true;
+
+        this.stopWarning();
+
+        if (this.pollingInterval) {
+            clearInterval(this.pollingInterval);
+        }
+
+        window.location.href = this.loginUrl + '?timeout=1';
+    }
+
+    /* ========== SOUND ========= */
+
+    playSound() {
+        if (!this.sound) return;
+        this.sound.loop = true;
+        this.sound.play().catch(() => {});
+    }
+
+    stopSound() {
+        if (!this.sound) return;
+        this.sound.pause();
+        this.sound.currentTime = 0;
+    }
+
+    /* ========== CSRF ========= */
+
+    getCSRFToken() {
+        return document.cookie
+            .split('; ')
+            .find(row => row.startsWith('csrftoken='))
+            ?.split('=')[1];
+    }
 }
 
-function sendActivityUpdate(updateUrl, csrfToken) {
-    if (!updateUrl || !csrfToken) return;
-    
-    fetch(updateUrl, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': csrfToken,
-            'X-Requested-With': 'XMLHttpRequest'
-        },
-        body: JSON.stringify({ timestamp: Date.now() })
-    })
-    .then(response => {
-        if (response.ok) {
-            console.log("Activity updated successfully");
-        }
-    })
-    .catch(error => {
-        console.log("Activity update failed (silent error):", error);
-    });
-}
+/* ========== START ========= */
 
-// Ajouter les styles CSS
-const style = document.createElement('style');
-style.textContent = `
-    @keyframes slideInRight {
-        from {
-            transform: translateX(100%);
-            opacity: 0;
-        }
-        to {
-            transform: translateX(0);
-            opacity: 1;
-        }
-    }
-    
-    .progress-bar-animated {
-        animation: progress-bar-stripes 1s linear infinite;
-    }
-    
-    @keyframes progress-bar-stripes {
-        0% {
-            background-position: 1rem 0;
-        }
-        100% {
-            background-position: 0 0;
-        }
-    }
-`;
-document.head.appendChild(style);
+document.addEventListener('DOMContentLoaded', () => {
+    new AdvancedSessionMonitor();
+});
 </script>
+{% endif %}
+
 
 </body>
 </html>

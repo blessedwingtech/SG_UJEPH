@@ -50,6 +50,7 @@ urlpatterns = [
     path('audit/', views.vue_audit, name='audit'), #audit
     path('login-attempts/', views.login_attempts_view, name='login_attempts'), #login attempt 
     path('update-activity/', views.update_activity, name='update_activity'),
+    path('debug-session/', views.debug_session, name='debug_session'),
 
     path('utilisateurs/<int:user_id>/profil/', views.voir_profil_utilisateur, name='voir_profil_utilisateur'),
     #password reset urls

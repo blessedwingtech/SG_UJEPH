@@ -17,4 +17,18 @@ urlpatterns = [
     path('mes-notes/', views.consulter_notes_etudiant, name='consulter_notes_etudiant'),
 
     path('gestion-semestres/', views.gestion_semestres, name='gestion_semestres'),
+    #SECTION RELEVEE DE NOTES
+    # Nouveaux URLs pour les relevés
+    path('releves/generer/', views.generer_releves_semestre, name='generer_releves'),
+    path('releves/gestion/', views.gestion_releves, name='gestion_releves'),
+    path('releves/<int:releve_id>/', views.consulter_releve_etudiant, name='detail_releve'),
+    path('releves/mes-releves/', views.consulter_releve_etudiant, name='mes_releves'),
+    path('cours/<int:cours_id>/releve/', views.releve_par_cours, name='releve_par_cours'),
+    path('releves/<int:releve_id>/export-csv/', views.exporter_releve_csv, name='exporter_releve_csv'),
+    path('historique/<int:etudiant_id>/', views.historique_complet_etudiant, name='historique_etudiant'),
+    path('historique/mon-historique/', views.historique_complet_etudiant, name='mon_historique'),
+    path('releves/gestion-complete/', views.gestion_releves_complete, name='gestion_releves_complete'),
+     # URLs AJAX pour les relevés
+    path('api/stats-releves/', views.api_stats_releves, name='api_stats_releves'),
+    path('api/simulation-releves/', views.api_simulation_releves, name='api_simulation_releves'),
 ]

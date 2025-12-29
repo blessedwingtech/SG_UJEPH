@@ -17,6 +17,7 @@
         </div>
     </div>
 
+    
     <!-- Cartes d'information -->
     <div class="row mb-4">
         <!-- Étudiants en S1 -->
@@ -206,6 +207,31 @@
             </div>
         </div>
     </div>
+    
+<!-- Template simplifié avec juste 1-2 liens -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="alert alert-info">
+            <h5><i class="bi bi-link-45deg"></i> Liens rapides</h5>
+            <div class="d-flex flex-wrap gap-2 mt-2">
+                <a href="{% url 'grades:gestion_releves_complete' %}" class="btn btn-outline-warning btn-sm">
+                    <i class="bi bi-file-earmark-text"></i> Gestion des relevés complètes
+                </a>
+                <a href="{% url 'grades:gestion_releves' %}" class="btn btn-outline-info btn-sm">
+                    <i class="bi bi-file-earmark-text"></i> Gestion des relevés
+                </a>
+                <a href="{% url 'grades:generer_releves' %}" class="btn btn-outline-success btn-sm">
+                    <i class="bi bi-plus-circle"></i> Générer des relevés
+                </a>
+                {% if request.user.role == 'student' %}
+                <a href="{% url 'grades:mes_releves' %}" class="btn btn-outline-primary btn-sm">
+                    <i class="bi bi-person-circle"></i> Mes relevés
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>    
 
     <!-- Historique récent -->
     <div class="card shadow-sm mt-4">

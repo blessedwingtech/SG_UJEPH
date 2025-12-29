@@ -1,6 +1,6 @@
 from django.db import models
 from accounts.models import Etudiant, Professeur, User
-from academics.models import Cours
+from academics.models import Cours, Faculte
 from datetime import timezone
 from django.utils import timezone
 
@@ -186,3 +186,60 @@ class HistoriquePromotion(models.Model):
     def __str__(self):
         return f"{self.etudiant.matricule} - {self.ancien_niveau}{self.ancien_semestre} → {self.nouveau_niveau}{self.nouveau_semestre}"
     
+
+# grades/models.py - AJOUTEZ APRÈS les autres modèles
+
+class ReleveDeNotes(models.Model):
+    """Archive structurée des relevés de notes par semestre/année"""
+    
+    etudiant = models.ForeignKey(Etudiant, on_delete=models.CASCADE, related_name='releves')
+    annee_academique = models.CharField(max_length=9)
+    semestre = models.CharField(max_length=10, choices=[('S1', 'Semestre 1'), ('S2', 'Semestre 2')])
+    
+    # Moyennes calculées
+    moyenne_semestre = models.DecimalField(max_digits=5, decimal_places=2)
+    moyenne_cumulee = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    moyenne_generale = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    
+    # Détails des notes (stocké en JSON pour l'archivage)
+    details_notes = models.JSONField(default=dict, help_text="Structure JSON des notes")
+    
+    # Informations académiques au moment du relevé
+    niveau = models.CharField(max_length=10)
+    faculte = models.ForeignKey(Faculte, on_delete=models.SET_NULL, null=True)
+    statut = models.CharField(max_length=20, default='actif')
+    
+    # Métadonnées
+    date_creation = models.DateTimeField(auto_now_add=True)
+    date_validation = models.DateTimeField(auto_now=True)
+    valide_par = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='releves_valides')
+    
+    # PDF généré (optionnel)
+    fichier_pdf = models.FileField(upload_to='releves/%Y/%m/%d/', null=True, blank=True)
+    
+    class Meta:
+        unique_together = ['etudiant', 'annee_academique', 'semestre']
+        ordering = ['-annee_academique', 'semestre']
+        verbose_name = "Relevé de notes"
+        verbose_name_plural = "Relevés de notes"
+    
+    def __str__(self):
+        return f"Relevé {self.etudiant.matricule} - {self.annee_academique} {self.semestre}"
+    
+    def calculer_stats(self):
+        """Calcule les statistiques à partir des détails"""
+        if not self.details_notes.get('notes'):
+            return None
+        
+        notes = self.details_notes['notes']
+        total_points = sum(n['note'] for n in notes)
+        total_coefficients = sum(n.get('coefficient', 1) for n in notes)
+        
+        return {
+            'nb_cours': len(notes),
+            'moyenne_ponderee': round(total_points / total_coefficients, 2),
+            'note_max': max(n['note'] for n in notes),
+            'note_min': min(n['note'] for n in notes),
+            'cours_valides': sum(1 for n in notes if n['note'] >= 70),  # Seuil UJEPH
+            'cours_echoues': sum(1 for n in notes if n['note'] < 70),
+        }

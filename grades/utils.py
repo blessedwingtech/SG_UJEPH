@@ -82,4 +82,129 @@ def calculer_et_stocker_moyennes(etudiant):
         etudiant.save()
         print(f"   🎯 Moyenne générale: {etudiant.moyenne_generale}/100")
 
+
+
+#SECTION POUR RELEVEE DE NOTES
+# grades/utils.py - CRÉEZ CE FICHIER
+
+from django.utils import timezone
+from django.db import transaction
+import json
+
+def generer_releve_notes(etudiant, annee_academique, semestre):
+    """
+    Génère et archive un relevé de notes pour un étudiant donné
+    """
+    from .models import Note, ReleveDeNotes, InscriptionCours
+    
+    # Récupérer toutes les notes publiées pour ce semestre
+    notes = Note.objects.filter(
+        etudiant=etudiant,
+        cours__semestre=semestre,
+        statut='publiée',
+        annee_academique=annee_academique
+    ).select_related('cours', 'cours__faculte')
+    
+    # Structure JSON des détails
+    details = {
+        'etudiant': {
+            'matricule': etudiant.matricule,
+            'nom_complet': etudiant.user.get_full_name(),
+            'niveau': etudiant.niveau,
+            'faculte': etudiant.faculte.nom,
+        },
+        'annee_academique': annee_academique,
+        'semestre': semestre,
+        'date_generation': timezone.now().isoformat(),
+        'notes': []
+    }
+    
+    total_points = 0
+    total_coefficients = 0
+    
+    for note in notes:
+        note_data = {
+            'cours_code': note.cours.code,
+            'cours_intitule': note.cours.intitule,
+            'note': float(note.valeur),
+            'coefficient': 1,  # À adapter si vous avez des coefficients
+            'credits': note.cours.credits,
+            'professeur': note.cours.professeur.get_full_name() if note.cours.professeur else '',
+            'date_publication': note.date_validation.isoformat() if note.date_validation else None,
+        }
         
+        details['notes'].append(note_data)
+        total_points += float(note.valeur)
+        total_coefficients += 1
+    
+    # Calculer la moyenne
+    moyenne_semestre = round(total_points / total_coefficients, 2) if total_coefficients > 0 else 0
+    
+    # Créer ou mettre à jour le relevé
+    with transaction.atomic():
+        releve, created = ReleveDeNotes.objects.update_or_create(
+            etudiant=etudiant,
+            annee_academique=annee_academique,
+            semestre=semestre,
+            defaults={
+                'niveau': etudiant.niveau,
+                'faculte': etudiant.faculte,
+                'moyenne_semestre': moyenne_semestre,
+                'details_notes': details,
+                'statut': etudiant.statut_academique,
+                'valide_par': None,  # À remplir lors de la validation
+            }
+        )
+        
+        # Mettre à jour la moyenne cumulée si S2
+        if semestre == 'S2':
+            update_moyenne_cumulee(etudiant, annee_academique)
+    
+    return releve
+
+def update_moyenne_cumulee(etudiant, annee_academique):
+    """Calcule et met à jour la moyenne cumulée pour l'année"""
+    from .models import ReleveDeNotes, MoyenneSemestre
+    
+    # Récupérer les relevés S1 et S2
+    releve_s1 = ReleveDeNotes.objects.filter(
+        etudiant=etudiant,
+        annee_academique=annee_academique,
+        semestre='S1'
+    ).first()
+    
+    releve_s2 = ReleveDeNotes.objects.filter(
+        etudiant=etudiant,
+        annee_academique=annee_academique,
+        semestre='S2'
+    ).first()
+    
+    if releve_s1 and releve_s2:
+        moyenne_cumulee = (releve_s1.moyenne_semestre + releve_s2.moyenne_semestre) / 2
+        
+        # Mettre à jour les deux relevés
+        ReleveDeNotes.objects.filter(
+            etudiant=etudiant,
+            annee_academique=annee_academique
+        ).update(moyenne_cumulee=moyenne_cumulee)
+        
+        # Mettre à jour aussi dans MoyenneSemestre
+        moyenne_s1 = MoyenneSemestre.objects.filter(
+            etudiant=etudiant,
+            semestre='S1',
+            annee_academique=annee_academique
+        ).first()
+        
+        moyenne_s2 = MoyenneSemestre.objects.filter(
+            etudiant=etudiant,
+            semestre='S2',
+            annee_academique=annee_academique
+        ).first()
+        
+        if moyenne_s1:
+            moyenne_s1.moyenne = releve_s1.moyenne_semestre
+            moyenne_s1.save()
+        
+        if moyenne_s2:
+            moyenne_s2.moyenne = releve_s2.moyenne_semestre
+            moyenne_s2.save()       
